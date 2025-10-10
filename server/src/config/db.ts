@@ -1,0 +1,67 @@
+import mysql2 from "mysql2/promise";
+import dotenv from "dotenv";
+dotenv.config();
+
+// Validate required environment variables
+const requiredEnvVars: string[] = [
+  "MYSQLHOST",
+  "MYSQLUSER",
+  "MYSQLPASSWORD",
+  "MYSQLDATABASE",
+];
+
+requiredEnvVars.forEach((varName) => {
+  if (!process.env[varName]) {
+    console.error(`Missing required environment variable: ${varName}`);
+    process.exit(1);
+  }
+});
+
+const pool: mysql2.Pool = mysql2.createPool({
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  dateStrings: true,
+});
+
+async function testConnection(): Promise<void> {
+  let retries = 5;
+  while (retries > 0) {
+    try {
+      const connection = await pool.getConnection();
+      console.log("Successfully connected to the database.");
+      connection.release();
+      break;
+    } catch (error) {
+      retries -= 1;
+      console.error(
+        `Database connection failed. Retries left: ${retries}. Error:`,
+        error
+      );
+      if (retries === 0) {
+        console.error("All retries failed. Exiting...");
+        process.exit(1);
+      }
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+    }
+  }
+}
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("Shutting down gracefully...");
+  try {
+    await pool.end();
+    console.log("Database connection pool closed.");
+  } catch (error) {
+    console.error("Error closing the database connection pool:", error);
+  }
+  process.exit(0);
+});
+
+(async () => {
+  await testConnection();
+})();
+
+export default pool;
