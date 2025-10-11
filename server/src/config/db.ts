@@ -1,4 +1,4 @@
-import mysql2 from "mysql2/promise";
+import mysql2, { RowDataPacket } from "mysql2/promise";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -63,5 +63,22 @@ process.on("SIGINT", async () => {
 (async () => {
   await testConnection();
 })();
+
+export async function queryListAsync<T extends RowDataPacket>(
+  sql: string,
+  params: any[] = []
+): Promise<T[]> {
+  const [rows] = await pool.execute<T[]>(sql, params);
+  return rows;
+}
+
+export async function queryFirstOrDefault<T extends RowDataPacket>(
+  sql: string,
+  params: any[] = []
+): Promise<T | null> {
+  let query = `${sql} LIMIT ONE`;
+  const [rows] = await pool.execute<T[]>(query, params);
+  return rows[0] ?? null;
+}
 
 export default pool;
