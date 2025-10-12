@@ -6,5 +6,5 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const practiceone_route_1 = __importDefault(require("./practiceone.route"));
 let apiRouter = (0, express_1.Router)();
-apiRouter.get("/practices", practiceone_route_1.default);
+apiRouter.use("/practices", practiceone_route_1.default);
 exports.default = apiRouter;

@@ -4,4 +4,8 @@ const express_1 = require("express");
 const practiceone_controller_1 = require("../controllers/practiceone.controller");
 let practiceOneRouter = (0, express_1.Router)();
 practiceOneRouter.get("/", practiceone_controller_1.getPractices);
+practiceOneRouter.get("/:practiceId", practiceone_controller_1.getPracticeByPracticeId);
+practiceOneRouter.post("/", practiceone_controller_1.createPractice);
+practiceOneRouter.put("/:practiceId", practiceone_controller_1.updatePractice);
+practiceOneRouter.delete("/:practiceId", practiceone_controller_1.deletePractice);
 exports.default = practiceOneRouter;

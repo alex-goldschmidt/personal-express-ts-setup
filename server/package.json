@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/server.js",
+    "start": "npm run build && node dist/app.js",
     "dev": "npm run build && nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts"
   },
   "keywords": [],
