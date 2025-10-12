@@ -11,6 +11,7 @@ const morgan_1 = __importDefault(require("morgan"));
 const http_errors_1 = __importDefault(require("http-errors"));
 const process_1 = __importDefault(require("process"));
 const dotenv_1 = __importDefault(require("dotenv"));
+const routes_1 = __importDefault(require("./routes"));
 const app = (0, express_1.default)();
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
@@ -19,6 +20,7 @@ app.use((0, cookie_parser_1.default)());
 app.use(express_1.default.static(path_1.default.join(__dirname, "public")));
 app.use((0, cors_1.default)());
 dotenv_1.default.config();
+app.use("/api", routes_1.default);
 app.use((req, res, next) => {
     next((0, http_errors_1.default)(404));
 });

@@ -1,18 +1,16 @@
-import { Request, Response, RequestHandler, NextFunction } from "express";
-import expressAsyncHandler from "express-async-handler";
-import { PracticeOne, PracticeOneDTO } from "../models/practiceone.model";
+import { RequestHandler } from "express";
+import { PracticeOneDTO } from "../repositories/practiceone.repository";
+import { PracticeService } from "../services/practiceone.service";
 
-export const getPractices: RequestHandler = expressAsyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const practiceId = Number(req.params.practiceId);
-    const practices = await PracticeOne.queryListByPracticeId(practiceId);
+interface GetPracticesParams {
+  practiceId: string;
+}
 
-    if (practices === null) {
-      const err = new Error("practices not found");
-      res.status(404);
-      return next(err);
-    }
-
-    res.json(practices);
-  }
-);
+export const getPractices: RequestHandler<
+  GetPracticesParams,
+  PracticeOneDTO[]
+> = async (req, res) => {
+  const practiceId = Number(req.params.practiceId);
+  const practiceList = await PracticeService.getPractices(practiceId);
+  res.json(practiceList);
+};

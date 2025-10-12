@@ -1,18 +1,18 @@
-import { QueryResult, RowDataPacket } from "mysql2";
-import db, { queryFirstOrDefault, queryListAsync } from "../config/db";
+import { RowDataPacket } from "mysql2";
+import { queryFirstAsync, queryListAsync } from "../config/db";
 export interface PracticeOneDTO extends RowDataPacket {
   practiceId: number;
   name: string;
 }
 
-const tableName = "practiceOne";
-
 export class PracticeOne {
+  static readonly tableName = "practiceOne";
+
   static async queryListByPracticeId(
     practiceId: number
   ): Promise<PracticeOneDTO[]> {
     return await queryListAsync<PracticeOneDTO>(
-      `SELECT * FROM ${tableName} WHERE practiceId = ?`,
+      `SELECT * FROM ${this.tableName} WHERE practiceId = ?`,
       [practiceId]
     );
   }
@@ -20,8 +20,8 @@ export class PracticeOne {
   static async queryFirstOrDefaultByPracticeId(
     practiceId: number
   ): Promise<PracticeOneDTO | null> {
-    return await queryFirstOrDefault<PracticeOneDTO>(
-      `SELECT * FROM ${tableName} WHERE practiceId = ?`,
+    return await queryFirstAsync<PracticeOneDTO>(
+      `SELECT * FROM ${this.tableName} WHERE practiceId = ?`,
       [practiceId]
     );
   }

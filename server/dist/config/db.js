@@ -4,7 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.queryListAsync = queryListAsync;
-exports.queryFirstOrDefault = queryFirstOrDefault;
+exports.queryFirstAsync = queryFirstAsync;
+exports.insertAsync = insertAsync;
+exports.updateAsync = updateAsync;
+exports.deleteAsync = deleteAsync;
 const promise_1 = __importDefault(require("mysql2/promise"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -67,9 +70,21 @@ async function queryListAsync(sql, params = []) {
     const [rows] = await pool.execute(sql, params);
     return rows;
 }
-async function queryFirstOrDefault(sql, params = []) {
-    let query = `${sql} LIMIT ONE`;
+async function queryFirstAsync(sql, params = []) {
+    let query = `${sql} LIMIT 1`;
     const [rows] = await pool.execute(query, params);
     return rows[0] ?? null;
+}
+async function insertAsync(sql, params = []) {
+    const [result] = await pool.execute(sql, params);
+    return (result.insertId ?? 0);
+}
+async function updateAsync(sql, params = []) {
+    const [result] = await pool.execute(sql, params);
+    return result.affectedRows;
+}
+async function deleteAsync(sql, params = []) {
+    const [result] = await pool.execute(sql, params);
+    return result.affectedRows;
 }
 exports.default = pool;

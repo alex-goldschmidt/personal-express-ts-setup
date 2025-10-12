@@ -7,6 +7,7 @@ import { Request, Response } from "express";
 import createHttpError, { HttpError } from "http-errors";
 import process from "process";
 import dotenv from "dotenv";
+import apiRouter from "./routes";
 
 const app = express();
 app.use(morgan("dev"));
@@ -16,6 +17,8 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 dotenv.config();
+
+app.use("/api", apiRouter);
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   next(createHttpError(404));

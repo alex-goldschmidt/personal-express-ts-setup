@@ -1,4 +1,4 @@
-import mysql2, { RowDataPacket } from "mysql2/promise";
+import mysql2, { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -72,13 +72,37 @@ export async function queryListAsync<T extends RowDataPacket>(
   return rows;
 }
 
-export async function queryFirstOrDefault<T extends RowDataPacket>(
+export async function queryFirstAsync<T extends RowDataPacket>(
   sql: string,
   params: any[] = []
 ): Promise<T | null> {
-  let query = `${sql} LIMIT ONE`;
+  let query = `${sql} LIMIT 1`;
   const [rows] = await pool.execute<T[]>(query, params);
   return rows[0] ?? null;
+}
+
+export async function insertAsync(
+  sql: string,
+  params: any[] = []
+): Promise<number> {
+  const [result] = await pool.execute<ResultSetHeader>(sql, params);
+  return (result.insertId ?? 0) as number;
+}
+
+export async function updateAsync(
+  sql: string,
+  params: any[] = []
+): Promise<number> {
+  const [result] = await pool.execute<ResultSetHeader>(sql, params);
+  return result.affectedRows;
+}
+
+export async function deleteAsync(
+  sql: string,
+  params: any[] = []
+): Promise<number> {
+  const [result] = await pool.execute<ResultSetHeader>(sql, params);
+  return result.affectedRows;
 }
 
 export default pool;
