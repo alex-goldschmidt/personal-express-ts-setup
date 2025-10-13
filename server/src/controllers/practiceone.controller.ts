@@ -6,10 +6,11 @@ interface GetPracticesParams {
   practiceId: string;
 }
 
-export const getPractices: RequestHandler<
-  GetPracticesParams,
-  PracticeOneDTO[]
-> = async (_req, res, next) => {
+export const getPractices: RequestHandler<{}, PracticeOneDTO[]> = async (
+  _req,
+  res,
+  next
+) => {
   const practiceList = await PracticeService.getPractices();
   if (!practiceList) {
     const err = new Error("Practice Records don't exist");

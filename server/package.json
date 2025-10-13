@@ -6,7 +6,9 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node dist/app.js",
-    "dev": "npm run build && nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts"
+    "dev": "npm run build && nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "keywords": [],
   "author": "",
@@ -16,13 +18,16 @@
     "@types/cookie-parser": "^1.4.9",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
     "@types/morgan": "^1.9.10",
     "@types/node": "^24.7.2",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "install": "^0.13.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "npm": "^11.6.2",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
