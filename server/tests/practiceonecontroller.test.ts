@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { getPractices } from "../src/controllers/practiceone.controller";
 import { PracticeService } from "../src/services/practiceone.service";
+import { PracticeOneRequestDTO } from "../src/dtos/practiceone.dto";
 
 jest.mock("../src/services/practiceone.service");
 jest.mock("../src/config/db", () => ({
@@ -11,7 +12,7 @@ jest.mock("../src/config/db", () => ({
 
 describe("PracticeOne Controller", () => {
   it("should return an array when items exist", async () => {
-    const mockPractices = [
+    const mockPractices: PracticeOneRequestDTO[] = [
       { practiceId: 1, name: "Practice A", description: "Desc A" },
       { practiceId: 2, name: "Practice B", description: "Desc B" },
     ];
