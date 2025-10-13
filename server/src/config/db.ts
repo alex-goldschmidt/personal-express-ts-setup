@@ -89,15 +89,7 @@ export async function insertAsync(
   return (result.insertId ?? 0) as number;
 }
 
-export async function updateAsync(
-  sql: string,
-  params: any[] = []
-): Promise<number> {
-  const [result] = await pool.execute<ResultSetHeader>(sql, params);
-  return result.affectedRows;
-}
-
-export async function deleteAsync(
+export async function executeNonQueryAsync(
   sql: string,
   params: any[] = []
 ): Promise<number> {

@@ -2,8 +2,7 @@ import {
   queryFirstAsync,
   queryListAsync,
   insertAsync,
-  updateAsync,
-  deleteAsync,
+  executeNonQueryAsync,
 } from "../config/db";
 import { PracticeOneDTO, PracticeOneRequestDTO } from "../dtos/practiceone.dto";
 
@@ -38,7 +37,7 @@ export class PracticeOneRepository {
   static async updatePractice(
     practice: PracticeOneRequestDTO
   ): Promise<number> {
-    return await updateAsync(
+    return await executeNonQueryAsync(
       `UPDATE ${this.tableName} SET name = ?, description = ?
       WHERE practiceId = ?`,
       [practice.name, practice.description, practice.practiceId]
@@ -46,7 +45,7 @@ export class PracticeOneRepository {
   }
 
   static async deletePractice(practiceId: number): Promise<number> {
-    return await deleteAsync(
+    return await executeNonQueryAsync(
       `DELETE FROM ${this.tableName} WHERE practiceId = ?`,
       [practiceId]
     );

@@ -6,8 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.queryListAsync = queryListAsync;
 exports.queryFirstAsync = queryFirstAsync;
 exports.insertAsync = insertAsync;
-exports.updateAsync = updateAsync;
-exports.deleteAsync = deleteAsync;
+exports.executeNonQueryAsync = executeNonQueryAsync;
 const promise_1 = __importDefault(require("mysql2/promise"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -79,11 +78,7 @@ async function insertAsync(sql, params = []) {
     const [result] = await pool.execute(sql, params);
     return (result.insertId ?? 0);
 }
-async function updateAsync(sql, params = []) {
-    const [result] = await pool.execute(sql, params);
-    return result.affectedRows;
-}
-async function deleteAsync(sql, params = []) {
+async function executeNonQueryAsync(sql, params = []) {
     const [result] = await pool.execute(sql, params);
     return result.affectedRows;
 }

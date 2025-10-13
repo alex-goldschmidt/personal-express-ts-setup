@@ -15,11 +15,11 @@ class PracticeOneRepository {
       VALUES (?, ?)`, [practice.name, practice.description]);
     }
     static async updatePractice(practice) {
-        return await (0, db_1.updateAsync)(`UPDATE ${this.tableName} SET name = ?, description = ?
+        return await (0, db_1.executeNonQueryAsync)(`UPDATE ${this.tableName} SET name = ?, description = ?
       WHERE practiceId = ?`, [practice.name, practice.description, practice.practiceId]);
     }
     static async deletePractice(practiceId) {
-        return await (0, db_1.deleteAsync)(`DELETE FROM ${this.tableName} WHERE practiceId = ?`, [practiceId]);
+        return await (0, db_1.executeNonQueryAsync)(`DELETE FROM ${this.tableName} WHERE practiceId = ?`, [practiceId]);
     }
 }
 exports.PracticeOneRepository = PracticeOneRepository;
