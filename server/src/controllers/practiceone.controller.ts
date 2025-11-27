@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { PracticeOneDTO, PracticeOneRequestDTO } from "../dtos/practiceone.dto";
 import { PracticeService } from "../services/practiceone.service";
 
-interface GetPracticesParams {
+export interface GetPracticesParams {
   practiceId: string;
 }
 
