@@ -7,6 +7,13 @@ export interface GetPracticesParams {
   practiceId: number;
 }
 
+/**
+ * GET /api/practices/
+ *
+ * Params: {}
+ *
+ * Response: PracticeOneDTO
+ */
 export const getPractices: RequestHandler<{}, PracticeOneDTO[]> = async (
   _req,
   res,
@@ -15,9 +22,16 @@ export const getPractices: RequestHandler<{}, PracticeOneDTO[]> = async (
   return executeSafely(() => PracticeService.getPractices(), res, next);
 };
 
+/**
+ * GET /api/practices/:practiceId
+ *
+ * Params: { practiceId: number }
+ *
+ * Response: PracticeOneDTO
+ */
 export const getPracticeByPracticeId: RequestHandler<
   GetPracticesParams,
-  PracticeOneDTO | null
+  PracticeOneDTO
 > = async (req, res, next) => {
   return executeSafely(
     () => PracticeService.getSinglePractice(req.params.practiceId),
@@ -26,6 +40,13 @@ export const getPracticeByPracticeId: RequestHandler<
   );
 };
 
+/**
+ * POST /api/practices/
+ *
+ * Params: {}
+ *
+ * Response: PracticeOneRequestDTO
+ */
 export const createPractice: RequestHandler<
   {},
   number,
@@ -46,6 +67,15 @@ export const createPractice: RequestHandler<
   );
 };
 
+/**
+ * PUT /api/practices/
+ *
+ * Params: GetPracticesParams
+ *
+ * Response: number
+ *
+ * Request: PracticeOneRequestDTO
+ */
 export const updatePractice: RequestHandler<
   GetPracticesParams,
   number,
@@ -68,6 +98,13 @@ export const updatePractice: RequestHandler<
   );
 };
 
+/**
+ * DELETE /api/practices/
+ *
+ * Params: GetPracticesParams
+ *
+ * Response: number
+ */
 export const deletePractice: RequestHandler<
   GetPracticesParams,
   number
