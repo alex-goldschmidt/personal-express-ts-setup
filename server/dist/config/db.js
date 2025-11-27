@@ -10,6 +10,7 @@ exports.executeNonQueryAsync = executeNonQueryAsync;
 const promise_1 = __importDefault(require("mysql2/promise"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
+const isTestEnv = process.env.NODE_ENV === "test";
 // Validate required environment variables
 const requiredEnvVars = [
     "MYSQLHOST",
@@ -20,7 +21,9 @@ const requiredEnvVars = [
 requiredEnvVars.forEach((varName) => {
     if (!process.env[varName]) {
         console.error(`Missing required environment variable: ${varName}`);
-        process.exit(1);
+        if (!isTestEnv)
+            process.exit(1);
+        throw new Error(`Missing required environment variable: ${varName}`);
     }
 });
 const pool = promise_1.default.createPool({
@@ -43,28 +46,34 @@ async function testConnection() {
             retries -= 1;
             console.error(`Database connection failed. Retries left: ${retries}. Error:`, error);
             if (retries === 0) {
-                console.error("All retries failed. Exiting...");
-                process.exit(1);
+                console.error("All retries failed.");
+                // throw instead of exiting so test runner or caller can handle it
+                throw new Error("Database connection failed after retries");
             }
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
     }
 }
-// Graceful shutdown
-process.on("SIGINT", async () => {
-    console.log("Shutting down gracefully...");
-    try {
-        await pool.end();
-        console.log("Database connection pool closed.");
-    }
-    catch (error) {
-        console.error("Error closing the database connection pool:", error);
-    }
-    process.exit(0);
-});
-(async () => {
-    await testConnection();
-})();
+// Graceful shutdown — only register in non-test env
+if (!isTestEnv) {
+    process.on("SIGINT", async () => {
+        console.log("Shutting down gracefully...");
+        try {
+            await pool.end();
+            console.log("Database connection pool closed.");
+        }
+        catch (error) {
+            console.error("Error closing the database connection pool:", error);
+        }
+        process.exit(0);
+    });
+}
+// Run initial connection check only when not testing
+if (!isTestEnv) {
+    (async () => {
+        await testConnection();
+    })();
+}
 async function queryListAsync(sql, params = []) {
     const [rows] = await pool.execute(sql, params);
     return rows ?? [];

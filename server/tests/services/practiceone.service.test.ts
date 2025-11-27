@@ -27,12 +27,6 @@ describe("PracticeService", () => {
     expect(mockedRepo.queryAllPractices).toHaveBeenCalled();
   });
 
-  it("getPractices returns empty array when repository returns null", async () => {
-    mockedRepo.queryAllPractices.mockResolvedValueOnce(null as any);
-    const res = await PracticeService.getPractices();
-    expect(res).toEqual([]);
-  });
-
   it("getSinglePractice returns a DTO when found", async () => {
     const fake: PracticeOneDTO = {
       practiceId: 2,

@@ -2,6 +2,8 @@ import mysql2, { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import dotenv from "dotenv";
 dotenv.config();
 
+const isTestEnv = process.env.NODE_ENV === "test";
+
 // Validate required environment variables
 const requiredEnvVars: string[] = [
   "MYSQLHOST",
@@ -13,7 +15,8 @@ const requiredEnvVars: string[] = [
 requiredEnvVars.forEach((varName) => {
   if (!process.env[varName]) {
     console.error(`Missing required environment variable: ${varName}`);
-    process.exit(1);
+    if (!isTestEnv) process.exit(1);
+    throw new Error(`Missing required environment variable: ${varName}`);
   }
 });
 
@@ -40,29 +43,35 @@ async function testConnection(): Promise<void> {
         error
       );
       if (retries === 0) {
-        console.error("All retries failed. Exiting...");
-        process.exit(1);
+        console.error("All retries failed.");
+        // throw instead of exiting so test runner or caller can handle it
+        throw new Error("Database connection failed after retries");
       }
       await new Promise((resolve) => setTimeout(resolve, 2000));
     }
   }
 }
 
-// Graceful shutdown
-process.on("SIGINT", async () => {
-  console.log("Shutting down gracefully...");
-  try {
-    await pool.end();
-    console.log("Database connection pool closed.");
-  } catch (error) {
-    console.error("Error closing the database connection pool:", error);
-  }
-  process.exit(0);
-});
+// Graceful shutdown — only register in non-test env
+if (!isTestEnv) {
+  process.on("SIGINT", async () => {
+    console.log("Shutting down gracefully...");
+    try {
+      await pool.end();
+      console.log("Database connection pool closed.");
+    } catch (error) {
+      console.error("Error closing the database connection pool:", error);
+    }
+    process.exit(0);
+  });
+}
 
-(async () => {
-  await testConnection();
-})();
+// Run initial connection check only when not testing
+if (!isTestEnv) {
+  (async () => {
+    await testConnection();
+  })();
+}
 
 export async function queryListAsync<T extends RowDataPacket>(
   sql: string,
