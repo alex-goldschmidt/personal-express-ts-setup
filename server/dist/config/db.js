@@ -67,7 +67,7 @@ process.on("SIGINT", async () => {
 })();
 async function queryListAsync(sql, params = []) {
     const [rows] = await pool.execute(sql, params);
-    return rows;
+    return rows ?? [];
 }
 async function queryFirstAsync(sql, params = []) {
     let query = `${sql} LIMIT 1`;

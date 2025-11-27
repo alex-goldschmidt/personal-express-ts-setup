@@ -4,14 +4,14 @@ import { PracticeOneDTO, PracticeOneRequestDTO } from "../dtos/practiceone.dto";
 export class PracticeService {
   static async getPractices(): Promise<PracticeOneDTO[]> {
     const result = await PracticeOneRepository.queryAllPractices();
-    return result ?? [];
+    return result;
   }
 
   static async getSinglePractice(
     practiceId: number
   ): Promise<PracticeOneDTO | null> {
     const result = await PracticeOneRepository.queryByPracticeId(practiceId);
-    return result ?? null;
+    return result;
   }
 
   static async createPractice(

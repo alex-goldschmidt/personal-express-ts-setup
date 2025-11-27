@@ -69,7 +69,7 @@ export async function queryListAsync<T extends RowDataPacket>(
   params: any[] = []
 ): Promise<T[]> {
   const [rows] = await pool.execute<T[]>(sql, params);
-  return rows;
+  return rows ?? [];
 }
 
 export async function queryFirstAsync<T extends RowDataPacket>(

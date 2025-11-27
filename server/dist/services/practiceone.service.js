@@ -5,11 +5,11 @@ const practiceone_repository_1 = require("../repositories/practiceone.repository
 class PracticeService {
     static async getPractices() {
         const result = await practiceone_repository_1.PracticeOneRepository.queryAllPractices();
-        return result ?? [];
+        return result;
     }
     static async getSinglePractice(practiceId) {
         const result = await practiceone_repository_1.PracticeOneRepository.queryByPracticeId(practiceId);
-        return result ?? null;
+        return result;
     }
     static async createPractice(practice) {
         return await practiceone_repository_1.PracticeOneRepository.createPractice(practice);
