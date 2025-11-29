@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import {
   getPractices,
   getPracticeByPracticeId,
-} from "../src/controllers/practiceone.controller";
-import { PracticeService } from "../src/services/practiceone.service";
-import { PracticeOneRequestDTO } from "../src/dtos/practiceone.dto";
-import { GetPracticesParams } from "../src/controllers/practiceone.controller";
+} from "../../src/controllers/practiceone.controller";
+import { PracticeService } from "../../src/services/practiceone.service";
+import { PracticeOneRequestDTO } from "../../src/dtos/practiceone.dto";
+import { GetPracticesParams } from "../../src/controllers/practiceone.controller";
 
-jest.mock("../src/services/practiceone.service");
-jest.mock("../src/config/db", () => ({
+jest.mock("../../src/services/practiceone.service");
+jest.mock("../../src/config/db", () => ({
   pool: {
     execute: jest.fn(),
   },
