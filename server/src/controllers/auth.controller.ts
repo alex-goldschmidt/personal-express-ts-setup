@@ -1,8 +1,9 @@
 import { RequestHandler } from "express";
 import { UserService } from "../services/auth.service";
 import executeSafely from "../utils/executeSafely";
-import { UserCreateInput } from "../models/userCreateInput.model";
+import { UserInput } from "../models/userCreateInput.model";
 import { User } from "../dtos/auth.dto";
+import { HttpStatusCode } from "../constants/constants";
 
 export interface UserParams {
   userId: number;
@@ -13,20 +14,23 @@ export interface UserParams {
  *
  * Params: {}
  *
- * Response: PracticeOneRequestDTO
+ * Response: boolean
  */
-export const signUp: RequestHandler<{}, number, UserCreateInput> = async (
+export const signUp: RequestHandler<{}, boolean, UserInput> = async (
   req,
   res,
   next
 ) => {
-  const newUser: UserCreateInput = {
+  const userInput: UserInput = {
     email: req.body.email,
     password: req.body.password,
   };
-  return executeSafely(() => UserService.createUser(newUser), res, next, {
-    successStatus: 201,
-    onEmpty: { status: 500, message: "User not created" },
+  return executeSafely(() => UserService.createUser(userInput), res, next, {
+    successStatus: HttpStatusCode.CREATED,
+    onEmpty: {
+      status: HttpStatusCode.SERVER_ERROR,
+      message: "User not created",
+    },
   });
 };
 

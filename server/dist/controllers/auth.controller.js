@@ -11,16 +11,19 @@ const executeSafely_1 = __importDefault(require("../utils/executeSafely"));
  *
  * Params: {}
  *
- * Response: PracticeOneRequestDTO
+ * Response: boolean
  */
 const signUp = async (req, res, next) => {
-    const newUser = {
+    const userInput = {
         email: req.body.email,
         password: req.body.password,
     };
-    return (0, executeSafely_1.default)(() => auth_service_1.UserService.createUser(newUser), res, next, {
-        successStatus: 201,
-        onEmpty: { status: 500, message: "User not created" },
+    return (0, executeSafely_1.default)(() => auth_service_1.UserService.createUser(userInput), res, next, {
+        successStatus: 201 /* HttpStatusCode.CREATED */,
+        onEmpty: {
+            status: 500 /* HttpStatusCode.SERVER_ERROR */,
+            message: "User not created",
+        },
     });
 };
 exports.signUp = signUp;

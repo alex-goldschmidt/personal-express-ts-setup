@@ -5,7 +5,6 @@ import {
   executeNonQueryAsync,
 } from "../config/db";
 import { User } from "../dtos/auth.dto";
-import { UserCreateInput } from "../models/userCreateInput.model";
 export class UserRepository {
   static readonly tableName = "user";
 
@@ -22,12 +21,12 @@ export class UserRepository {
 
   static async queryByEmail(email: string): Promise<User | null> {
     return await queryFirstAsync<User>(
-      `SELECT * FROM ${this.tableName} WHERE email = ?`,
+      `SELECT userId, email FROM ${this.tableName} WHERE email = ?`,
       [email]
     );
   }
 
-  static async createUser(newUser: UserCreateInput): Promise<number> {
+  static async createUser(newUser: User): Promise<number> {
     return await insertAsync(
       `INSERT INTO ${this.tableName} (email, password) 
       VALUES (?, ?)`,

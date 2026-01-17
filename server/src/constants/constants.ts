@@ -1,0 +1,9 @@
+export const enum HttpStatusCode {
+  NOT_FOUND = 404,
+  CREATED = 201,
+  CONFLICT = 409,
+  BAD_REQUEST = 400,
+  SUCCESS = 200,
+  UNAUTHORIZED = 401,
+  SERVER_ERROR = 500,
+}

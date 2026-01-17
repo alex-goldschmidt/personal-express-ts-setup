@@ -1,3 +1,5 @@
+import { HttpStatusCode } from "../constants/constants";
+
 export interface ErrorItem {
   field: string;
   message: string;
@@ -17,28 +19,28 @@ export class AppError extends Error {
 
 export class ValidationError extends AppError {
   constructor(errors: ErrorItem[]) {
-    super(400, "Validation failed", errors);
+    super(HttpStatusCode.BAD_REQUEST, "Validation failed", errors);
     this.name = "ValidationError";
   }
 }
 
 export class NotFoundError extends AppError {
   constructor(message: string = "Not found") {
-    super(404, message);
+    super(HttpStatusCode.NOT_FOUND, message);
     this.name = "NotFoundError";
   }
 }
 
 export class UnauthorizedError extends AppError {
   constructor(message: string = "Unauthorized") {
-    super(401, message);
+    super(HttpStatusCode.UNAUTHORIZED, message);
     this.name = "UnauthorizedError";
   }
 }
 
 export class ConflictError extends AppError {
   constructor(message: string) {
-    super(409, message);
+    super(HttpStatusCode.CONFLICT, message);
     this.name = "ConflictError";
   }
 }

@@ -4,10 +4,11 @@ import path from "path";
 import cookieParser from "cookie-parser";
 import morgan from "morgan";
 import { Request, Response } from "express";
-import createHttpError, { HttpError } from "http-errors";
 import process from "process";
 import dotenv from "dotenv";
 import apiRouter from "./routes";
+import { errorHandler } from "./middlewares/error.middleware";
+import { HttpStatusCode } from "./constants/constants";
 
 const app = express();
 app.use(morgan("dev"));
@@ -20,16 +21,14 @@ dotenv.config();
 
 app.use("/api", apiRouter);
 
-app.use((req: Request, res: Response, next: NextFunction) => {
-  next(createHttpError(404));
-});
-
-app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
-  res.status(err.status || 500).json({
-    message: err.message,
-    error: req.app.get("env") === "development" ? err : {},
+app.use((req: Request, res: Response) => {
+  res.status(HttpStatusCode.NOT_FOUND).json({
+    statusCode: HttpStatusCode.NOT_FOUND,
+    message: `${req.method} ${req.originalUrl} Not Found`,
   });
 });
+
+app.use(errorHandler);
 
 const port = process.env.PORT;
 app.listen(port, () => {

@@ -8,10 +8,10 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const morgan_1 = __importDefault(require("morgan"));
-const http_errors_1 = __importDefault(require("http-errors"));
 const process_1 = __importDefault(require("process"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const routes_1 = __importDefault(require("./routes"));
+const error_middleware_1 = require("./middlewares/error.middleware");
 const app = (0, express_1.default)();
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());
@@ -21,15 +21,13 @@ app.use(express_1.default.static(path_1.default.join(__dirname, "public")));
 app.use((0, cors_1.default)());
 dotenv_1.default.config();
 app.use("/api", routes_1.default);
-app.use((req, res, next) => {
-    next((0, http_errors_1.default)(404));
-});
-app.use((err, req, res, next) => {
-    res.status(err.status || 500).json({
-        message: err.message,
-        error: req.app.get("env") === "development" ? err : {},
+app.use((req, res) => {
+    res.status(404 /* HttpStatusCode.NOT_FOUND */).json({
+        statusCode: 404 /* HttpStatusCode.NOT_FOUND */,
+        message: `${req.method} ${req.originalUrl} Not Found`,
     });
 });
+app.use(error_middleware_1.errorHandler);
 const port = process_1.default.env.PORT;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

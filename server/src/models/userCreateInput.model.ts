@@ -1,5 +1,5 @@
-import z, { uppercase } from "zod";
-export const UserCreateInputSchema = z.object({
+import z from "zod";
+export const UserInputSchema = z.object({
   email: z.email({ message: "Enter a valid email address" }).max(255),
   password: z
     .string()
@@ -7,4 +7,4 @@ export const UserCreateInputSchema = z.object({
     .max(255),
 });
 
-export type UserCreateInput = z.infer<typeof UserCreateInputSchema>;
+export type UserInput = z.infer<typeof UserInputSchema>;
