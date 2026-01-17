@@ -52,3 +52,28 @@ export const getUserById: RequestHandler<UserParams, User> = async (
     next
   );
 };
+
+/**
+ * POST /api/users/signIn
+ *
+ * Params: {}
+ *
+ * Response: boolean
+ */
+export const signIn: RequestHandler<{}, boolean, UserInput> = async (
+  req,
+  res,
+  next
+) => {
+  const userInput: UserInput = {
+    email: req.body.email,
+    password: req.body.password,
+  };
+  return executeSafely(() => UserService.signIn(userInput), res, next, {
+    successStatus: HttpStatusCode.SUCCESS,
+    onEmpty: {
+      status: HttpStatusCode.UNAUTHORIZED,
+      message: "Unauthorized",
+    },
+  });
+};

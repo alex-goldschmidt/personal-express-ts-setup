@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getUserById = exports.signUp = void 0;
+exports.signIn = exports.getUserById = exports.signUp = void 0;
 const auth_service_1 = require("../services/auth.service");
 const executeSafely_1 = __importDefault(require("../utils/executeSafely"));
 /**
@@ -38,3 +38,24 @@ const getUserById = async (req, res, next) => {
     return (0, executeSafely_1.default)(() => auth_service_1.UserService.getSingleUserById(req.params.userId), res, next);
 };
 exports.getUserById = getUserById;
+/**
+ * POST /api/users/signIn
+ *
+ * Params: {}
+ *
+ * Response: boolean
+ */
+const signIn = async (req, res, next) => {
+    const userInput = {
+        email: req.body.email,
+        password: req.body.password,
+    };
+    return (0, executeSafely_1.default)(() => auth_service_1.UserService.signIn(userInput), res, next, {
+        successStatus: 200 /* HttpStatusCode.SUCCESS */,
+        onEmpty: {
+            status: 401 /* HttpStatusCode.UNAUTHORIZED */,
+            message: "Unauthorized",
+        },
+    });
+};
+exports.signIn = signIn;

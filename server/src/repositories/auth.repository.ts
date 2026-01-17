@@ -21,7 +21,7 @@ export class UserRepository {
 
   static async queryByEmail(email: string): Promise<User | null> {
     return await queryFirstAsync<User>(
-      `SELECT userId, email FROM ${this.tableName} WHERE email = ?`,
+      `SELECT userId, email, password FROM ${this.tableName} WHERE email = ?`,
       [email]
     );
   }

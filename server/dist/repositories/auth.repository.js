@@ -11,7 +11,7 @@ class UserRepository {
         return await (0, db_1.queryFirstAsync)(`SELECT * FROM ${this.tableName} WHERE userId = ?`, [userId]);
     }
     static async queryByEmail(email) {
-        return await (0, db_1.queryFirstAsync)(`SELECT userId, email FROM ${this.tableName} WHERE email = ?`, [email]);
+        return await (0, db_1.queryFirstAsync)(`SELECT userId, email, password FROM ${this.tableName} WHERE email = ?`, [email]);
     }
     static async createUser(newUser) {
         return await (0, db_1.insertAsync)(`INSERT INTO ${this.tableName} (email, password) 
