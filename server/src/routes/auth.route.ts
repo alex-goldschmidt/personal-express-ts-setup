@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { signUp } from "../controllers/auth.controller";
+import { getUserById, signUp } from "../controllers/auth.controller";
 let authRouter: Router = Router();
 
 authRouter.post("/register", signUp);
+authRouter.get("/:userId", getUserById);
 
 export default authRouter;

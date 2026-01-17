@@ -1,5 +1,11 @@
 import { UserRepository } from "../repositories/auth.repository";
-import { User, UserRequestDTO } from "../dtos/auth.dto";
+import { User } from "../dtos/auth.dto";
+import {
+  UserCreateInput,
+  UserCreateInputSchema,
+} from "../models/userCreateInput.model";
+import { validateWithZod } from "../utils/errorValidator";
+import { ConflictError } from "../config/exceptions";
 export class UserService {
   static async getUsers(): Promise<User[]> {
     const result = await UserRepository.queryAllUsers();
@@ -16,8 +22,17 @@ export class UserService {
     return result;
   }
 
-  static async createUser(user: UserRequestDTO): Promise<number> {
-    return await UserRepository.createUser(user);
+  static async createUser(newUser: UserCreateInput): Promise<number> {
+    const validatedUser = validateWithZod(UserCreateInputSchema, newUser);
+    const isExistingUser = await UserRepository.queryByEmail(
+      validatedUser.email
+    );
+
+    if (isExistingUser) {
+      throw new ConflictError("User with this email already exists.");
+    }
+
+    return await UserRepository.createUser(newUser);
   }
 
   static async deleteUser(userId: number): Promise<number> {

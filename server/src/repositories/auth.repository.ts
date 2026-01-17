@@ -4,7 +4,8 @@ import {
   insertAsync,
   executeNonQueryAsync,
 } from "../config/db";
-import { User, UserRequestDTO } from "../dtos/auth.dto";
+import { User } from "../dtos/auth.dto";
+import { UserCreateInput } from "../models/userCreateInput.model";
 export class UserRepository {
   static readonly tableName = "user";
 
@@ -26,11 +27,11 @@ export class UserRepository {
     );
   }
 
-  static async createUser(user: UserRequestDTO): Promise<number> {
+  static async createUser(newUser: UserCreateInput): Promise<number> {
     return await insertAsync(
       `INSERT INTO ${this.tableName} (email, password) 
       VALUES (?, ?)`,
-      [user.email, user.password]
+      [newUser.email, newUser.password]
     );
   }
 
