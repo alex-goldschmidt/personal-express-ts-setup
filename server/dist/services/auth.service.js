@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserService = void 0;
 const auth_repository_1 = require("../repositories/auth.repository");
@@ -7,6 +10,9 @@ const exceptions_1 = require("../config/exceptions");
 const password_1 = require("../utils/password");
 const userCreateInput_model_1 = require("../models/userCreateInput.model");
 const argon2_1 = require("@node-rs/argon2");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const dotenv_1 = __importDefault(require("dotenv"));
+dotenv_1.default.config();
 class UserService {
     static async getSingleUserById(userId) {
         const result = await auth_repository_1.UserRepository.queryByUserId(userId);
@@ -22,8 +28,14 @@ class UserService {
         if (!isPasswordValid) {
             throw new exceptions_1.UnauthorizedError("Incorrect password. Please try again.");
         }
-        return true;
-        // jwt.sign({ userId: user.id }, 'your-very-strong-secret-key', { expiresIn: '1h' })    return true;
+        const jwtPayload = {
+            sub: existingUser.userId?.toString(),
+        };
+        const signedToken = jsonwebtoken_1.default.sign(jwtPayload, process.env.JWT_SECRET, {
+            expiresIn: "15m",
+            algorithm: "HS256",
+        });
+        return signedToken;
     }
     static async createUser(userInput) {
         const validatedUser = (0, errorValidator_1.validateWithZod)(userCreateInput_model_1.UserInputSchema, userInput);

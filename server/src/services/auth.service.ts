@@ -5,7 +5,9 @@ import { ConflictError, UnauthorizedError } from "../config/exceptions";
 import { hashPassword } from "../utils/password";
 import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
 import { verify } from "@node-rs/argon2";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload, Secret } from "jsonwebtoken";
+import dotenv from "dotenv";
+dotenv.config();
 
 export class UserService {
   static async getSingleUserById(userId: number): Promise<User | null> {
@@ -13,7 +15,7 @@ export class UserService {
     return result;
   }
 
-  static async signIn(userInput: UserInput): Promise<boolean> {
+  static async signIn(userInput: UserInput): Promise<string> {
     const validatedUser = validateWithZod(UserInputSchema, userInput);
     const existingUser = await UserRepository.queryByEmail(validatedUser.email);
 
@@ -32,8 +34,19 @@ export class UserService {
       throw new UnauthorizedError("Incorrect password. Please try again.");
     }
 
-    return true;
-    // jwt.sign({ userId: user.id }, 'your-very-strong-secret-key', { expiresIn: '1h' })    return true;
+    const jwtPayload: JwtPayload = {
+      sub: existingUser.userId?.toString(),
+    };
+    const signedToken = jwt.sign(
+      jwtPayload,
+      process.env.JWT_ACCESS_TOKEN_SECRET as Secret,
+      {
+        expiresIn: "15m",
+        algorithm: "HS256",
+      }
+    );
+
+    return signedToken;
   }
 
   static async createUser(userInput: UserInput): Promise<boolean> {

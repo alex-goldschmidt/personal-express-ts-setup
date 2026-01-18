@@ -44,3 +44,9 @@ export class ConflictError extends AppError {
     this.name = "ConflictError";
   }
 }
+export class ForbiddenError extends AppError {
+  constructor(message: string) {
+    super(HttpStatusCode.FORBIDDEN, message);
+    this.name = "ForbiddenError";
+  }
+}

@@ -5,5 +5,6 @@ export const enum HttpStatusCode {
   BAD_REQUEST = 400,
   SUCCESS = 200,
   UNAUTHORIZED = 401,
+  FORBIDDEN = 403,
   SERVER_ERROR = 500,
 }

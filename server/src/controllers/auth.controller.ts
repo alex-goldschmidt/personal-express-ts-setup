@@ -60,7 +60,7 @@ export const getUserById: RequestHandler<UserParams, User> = async (
  *
  * Response: boolean
  */
-export const signIn: RequestHandler<{}, boolean, UserInput> = async (
+export const signIn: RequestHandler<{}, string, UserInput> = async (
   req,
   res,
   next
