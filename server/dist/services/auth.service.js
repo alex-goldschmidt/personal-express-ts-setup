@@ -10,7 +10,7 @@ const exceptions_1 = require("../config/exceptions");
 const password_1 = require("../utils/password");
 const userCreateInput_model_1 = require("../models/userCreateInput.model");
 const argon2_1 = require("@node-rs/argon2");
-const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
+const jwt_1 = require("../utils/jwt");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 class UserService {
@@ -28,14 +28,18 @@ class UserService {
         if (!isPasswordValid) {
             throw new exceptions_1.UnauthorizedError("Incorrect password. Please try again.");
         }
-        const jwtPayload = {
-            sub: existingUser.userId?.toString(),
-        };
-        const signedToken = jsonwebtoken_1.default.sign(jwtPayload, process.env.JWT_SECRET, {
-            expiresIn: "15m",
-            algorithm: "HS256",
-        });
-        return signedToken;
+        const accessTokens = await (0, jwt_1.generateTokenPair)(existingUser.userId);
+        return accessTokens;
+    }
+    static async refreshAccessToken(req) {
+        const refreshToken = req.cookies?.["refreshToken"];
+        if (!refreshToken) {
+            throw new exceptions_1.UnauthorizedError("Refresh Token Missing");
+        }
+        const decoded = await (0, jwt_1.verifyToken)(refreshToken);
+        const userId = parseInt(decoded.sub);
+        const token = await (0, jwt_1.generateAccessToken)(userId);
+        return token;
     }
     static async createUser(userInput) {
         const validatedUser = (0, errorValidator_1.validateWithZod)(userCreateInput_model_1.UserInputSchema, userInput);

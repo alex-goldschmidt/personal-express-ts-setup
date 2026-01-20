@@ -12,6 +12,8 @@ const process_1 = __importDefault(require("process"));
 const dotenv_1 = __importDefault(require("dotenv"));
 const routes_1 = __importDefault(require("./routes"));
 const error_middleware_1 = require("./middlewares/error.middleware");
+/* ^ignore intellisense, don't remove this or you'll get MODULE_NOT_FOUND
+    when starting up the app */
 const app = (0, express_1.default)();
 app.use((0, morgan_1.default)("dev"));
 app.use(express_1.default.json());

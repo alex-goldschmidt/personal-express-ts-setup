@@ -1,16 +1,8 @@
-import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload, Secret } from "jsonwebtoken";
 import { ForbiddenError, UnauthorizedError } from "../config/exceptions";
+import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 dotenv.config();
-
-declare global {
-  namespace Express {
-    interface Request {
-      user?: string | JwtPayload | undefined;
-    }
-  }
-}
 
 export function authenticateToken<P = Record<string, string>>(
   req: Request<P>,
@@ -27,7 +19,7 @@ export function authenticateToken<P = Record<string, string>>(
   try {
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET as Secret
+      process.env.JWT_ACCESS_TOKEN_SECRET as Secret
     ) as JwtPayload;
     req.user = decoded;
     next();

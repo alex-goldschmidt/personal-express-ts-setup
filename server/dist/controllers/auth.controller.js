@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.signIn = exports.getUserById = exports.signUp = void 0;
+exports.refreshToken = exports.signIn = exports.getUserById = exports.signUp = void 0;
 const auth_service_1 = require("../services/auth.service");
 const executeSafely_1 = __importDefault(require("../utils/executeSafely"));
 /**
@@ -50,7 +50,15 @@ const signIn = async (req, res, next) => {
         email: req.body.email,
         password: req.body.password,
     };
-    return (0, executeSafely_1.default)(() => auth_service_1.UserService.signIn(userInput), res, next, {
+    return (0, executeSafely_1.default)(async () => {
+        const tokens = await auth_service_1.UserService.signIn(userInput);
+        res.cookie("refreshToken", tokens.refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "strict",
+        });
+        return tokens.accessToken;
+    }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,
         onEmpty: {
             status: 401 /* HttpStatusCode.UNAUTHORIZED */,
@@ -59,3 +67,19 @@ const signIn = async (req, res, next) => {
     });
 };
 exports.signIn = signIn;
+/**
+ * POST /api/users/refreshToken
+ *
+ * Params: {}
+ *
+ * Response: Promise<string>
+ */
+const refreshToken = async (req, res, next) => {
+    return (0, executeSafely_1.default)(async () => {
+        const newAccessToken = await auth_service_1.UserService.refreshAccessToken(req);
+        return newAccessToken;
+    }, res, next, {
+        successStatus: 200 /* HttpStatusCode.SUCCESS */,
+    });
+};
+exports.refreshToken = refreshToken;

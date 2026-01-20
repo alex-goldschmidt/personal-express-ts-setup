@@ -7,4 +7,5 @@ let authRouter = (0, express_1.Router)();
 authRouter.post("/register", auth_controller_1.signUp);
 authRouter.get("/:userId", authenticateToken_middleware_1.authenticateToken, auth_controller_1.getUserById);
 authRouter.post("/signIn", auth_controller_1.signIn);
+authRouter.post("/refreshToken", auth_controller_1.refreshToken);
 exports.default = authRouter;

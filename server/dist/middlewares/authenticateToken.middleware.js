@@ -15,7 +15,7 @@ function authenticateToken(req, _res, next) {
         throw new exceptions_1.UnauthorizedError("Missing token");
     }
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+        const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_ACCESS_TOKEN_SECRET);
         req.user = decoded;
         next();
     }

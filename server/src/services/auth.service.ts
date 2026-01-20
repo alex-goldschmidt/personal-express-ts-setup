@@ -5,7 +5,13 @@ import { ConflictError, UnauthorizedError } from "../config/exceptions";
 import { hashPassword } from "../utils/password";
 import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
 import { verify } from "@node-rs/argon2";
-import jwt, { JwtPayload, Secret } from "jsonwebtoken";
+import { Request } from "express";
+import {
+  generateAccessToken,
+  generateTokenPair,
+  TokenPair,
+  verifyToken,
+} from "../utils/jwt";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -15,7 +21,7 @@ export class UserService {
     return result;
   }
 
-  static async signIn(userInput: UserInput): Promise<string> {
+  static async signIn(userInput: UserInput): Promise<TokenPair> {
     const validatedUser = validateWithZod(UserInputSchema, userInput);
     const existingUser = await UserRepository.queryByEmail(validatedUser.email);
 
@@ -34,19 +40,25 @@ export class UserService {
       throw new UnauthorizedError("Incorrect password. Please try again.");
     }
 
-    const jwtPayload: JwtPayload = {
-      sub: existingUser.userId?.toString(),
-    };
-    const signedToken = jwt.sign(
-      jwtPayload,
-      process.env.JWT_ACCESS_TOKEN_SECRET as Secret,
-      {
-        expiresIn: "15m",
-        algorithm: "HS256",
-      }
-    );
+    const accessTokens = await generateTokenPair(existingUser.userId);
 
-    return signedToken;
+    return accessTokens;
+  }
+
+  static async refreshAccessToken(req: Request): Promise<string> {
+    const refreshToken = req.cookies?.["refreshToken"] as string;
+
+    if (!refreshToken) {
+      throw new UnauthorizedError("Refresh Token Missing");
+    }
+
+    const decoded = await verifyToken(refreshToken);
+
+    const userId = parseInt(decoded.sub!);
+
+    const token = await generateAccessToken(userId);
+
+    return token;
   }
 
   static async createUser(userInput: UserInput): Promise<boolean> {

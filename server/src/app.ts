@@ -1,4 +1,4 @@
-import express, { NextFunction } from "express";
+import express from "express";
 import cors from "cors";
 import path from "path";
 import cookieParser from "cookie-parser";
@@ -9,6 +9,9 @@ import dotenv from "dotenv";
 import apiRouter from "./routes";
 import { errorHandler } from "./middlewares/error.middleware";
 import { HttpStatusCode } from "./constants/constants";
+import { ExpressRequest } from "./types/express";
+/* ^ignore intellisense, don't remove this or you'll get MODULE_NOT_FOUND
+    when starting up the app */
 
 const app = express();
 app.use(morgan("dev"));
