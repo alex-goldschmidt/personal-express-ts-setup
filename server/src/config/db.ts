@@ -1,5 +1,6 @@
 import mysql2, { ResultSetHeader, RowDataPacket } from "mysql2/promise";
 import dotenv from "dotenv";
+import { CountResult } from "../types/dbTypes/countResult";
 dotenv.config();
 
 const isTestEnv = process.env.NODE_ENV === "test";
@@ -104,6 +105,11 @@ export async function executeNonQueryAsync(
 ): Promise<number> {
   const [result] = await pool.execute<ResultSetHeader>(sql, params);
   return result.affectedRows;
+}
+
+export async function countAsync(sql: string, params?: any[]): Promise<number> {
+  const [rows] = await pool.execute<CountResult[]>(sql, params);
+  return rows[0].count;
 }
 
 export default pool;

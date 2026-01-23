@@ -12,6 +12,7 @@ const userCreateInput_model_1 = require("../models/userCreateInput.model");
 const argon2_1 = require("@node-rs/argon2");
 const jwt_1 = require("../utils/jwt");
 const dotenv_1 = __importDefault(require("dotenv"));
+const refreshToken_repository_1 = require("../repositories/refreshToken.repository");
 dotenv_1.default.config();
 class UserService {
     static async getSingleUserById(userId) {
@@ -29,17 +30,28 @@ class UserService {
             throw new exceptions_1.UnauthorizedError("Incorrect password. Please try again.");
         }
         const accessTokens = await (0, jwt_1.generateTokenPair)(existingUser.userId);
+        await (0, jwt_1.handleRefreshToken)(accessTokens.refreshToken, existingUser.userId);
         return accessTokens;
     }
     static async refreshAccessToken(req) {
-        const refreshToken = req.cookies?.["refreshToken"];
-        if (!refreshToken) {
-            throw new exceptions_1.UnauthorizedError("Refresh Token Missing");
+        const oldRefreshToken = req.cookies?.["refreshToken"];
+        if (!oldRefreshToken) {
+            throw new exceptions_1.UnauthorizedError("Missing Token");
         }
-        const decoded = await (0, jwt_1.verifyToken)(refreshToken);
+        const decoded = await (0, jwt_1.verifyToken)(oldRefreshToken);
         const userId = parseInt(decoded.sub);
-        const token = await (0, jwt_1.generateAccessToken)(userId);
-        return token;
+        const oldRefreshTokenHash = await (0, jwt_1.createTokenHash)(oldRefreshToken);
+        const refreshTokenInDb = await refreshToken_repository_1.RefreshTokenRepository.queryByUserIdAndTokenHash(userId, oldRefreshTokenHash);
+        if (!refreshTokenInDb) {
+            throw new exceptions_1.UnauthorizedError("Invalid Token");
+        }
+        if (refreshTokenInDb.isRevoked === 1) {
+            throw new exceptions_1.ForbiddenError("Token was revoked");
+        }
+        await refreshToken_repository_1.RefreshTokenRepository.updateTokenRevokedStatus(oldRefreshTokenHash, 1, userId);
+        const newTokenPair = await (0, jwt_1.generateTokenPair)(userId);
+        await (0, jwt_1.handleRefreshToken)(newTokenPair.refreshToken, userId);
+        return newTokenPair;
     }
     static async createUser(userInput) {
         const validatedUser = (0, errorValidator_1.validateWithZod)(userCreateInput_model_1.UserInputSchema, userInput);

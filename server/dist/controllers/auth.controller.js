@@ -56,6 +56,7 @@ const signIn = async (req, res, next) => {
             httpOnly: true,
             secure: true,
             sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000,
         });
         return tokens.accessToken;
     }, res, next, {
@@ -76,8 +77,8 @@ exports.signIn = signIn;
  */
 const refreshToken = async (req, res, next) => {
     return (0, executeSafely_1.default)(async () => {
-        const newAccessToken = await auth_service_1.UserService.refreshAccessToken(req);
-        return newAccessToken;
+        const tokenPair = await auth_service_1.UserService.refreshAccessToken(req);
+        return tokenPair.accessToken;
     }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,
     });

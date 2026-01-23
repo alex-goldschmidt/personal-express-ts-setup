@@ -1,18 +1,24 @@
 import { UserRepository } from "../repositories/auth.repository";
 import { User } from "../dtos/auth.dto";
 import { validateWithZod } from "../utils/errorValidator";
-import { ConflictError, UnauthorizedError } from "../config/exceptions";
+import {
+  ConflictError,
+  ForbiddenError,
+  UnauthorizedError,
+} from "../config/exceptions";
 import { hashPassword } from "../utils/password";
 import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
 import { verify } from "@node-rs/argon2";
 import { Request } from "express";
 import {
-  generateAccessToken,
+  createTokenHash,
   generateTokenPair,
+  handleRefreshToken,
   TokenPair,
   verifyToken,
 } from "../utils/jwt";
 import dotenv from "dotenv";
+import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 dotenv.config();
 
 export class UserService {
@@ -42,23 +48,48 @@ export class UserService {
 
     const accessTokens = await generateTokenPair(existingUser.userId);
 
+    await handleRefreshToken(accessTokens.refreshToken, existingUser.userId);
+
     return accessTokens;
   }
 
-  static async refreshAccessToken(req: Request): Promise<string> {
-    const refreshToken = req.cookies?.["refreshToken"] as string;
+  static async refreshAccessToken(req: Request): Promise<TokenPair> {
+    const oldRefreshToken = req.cookies?.["refreshToken"] as string;
 
-    if (!refreshToken) {
-      throw new UnauthorizedError("Refresh Token Missing");
+    if (!oldRefreshToken) {
+      throw new UnauthorizedError("Missing Token");
     }
 
-    const decoded = await verifyToken(refreshToken);
+    const decoded = await verifyToken(oldRefreshToken);
 
     const userId = parseInt(decoded.sub!);
 
-    const token = await generateAccessToken(userId);
+    const oldRefreshTokenHash = await createTokenHash(oldRefreshToken);
+    const refreshTokenInDb =
+      await RefreshTokenRepository.queryByUserIdAndTokenHash(
+        userId,
+        oldRefreshTokenHash
+      );
 
-    return token;
+    if (!refreshTokenInDb) {
+      throw new UnauthorizedError("Invalid Token");
+    }
+
+    if (refreshTokenInDb.isRevoked === 1) {
+      throw new ForbiddenError("Token was revoked");
+    }
+
+    await RefreshTokenRepository.updateTokenRevokedStatus(
+      oldRefreshTokenHash,
+      1,
+      userId
+    );
+
+    const newTokenPair = await generateTokenPair(userId);
+
+    await handleRefreshToken(newTokenPair.refreshToken, userId);
+
+    return newTokenPair;
   }
 
   static async createUser(userInput: UserInput): Promise<boolean> {

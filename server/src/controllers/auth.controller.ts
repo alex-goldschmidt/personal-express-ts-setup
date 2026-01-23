@@ -109,8 +109,8 @@ export const refreshToken: RequestHandler<{}, string> = async (
 ) => {
   return executeSafely(
     async () => {
-      const newAccessToken = await UserService.refreshAccessToken(req);
-      return newAccessToken;
+      const tokenPair = await UserService.refreshAccessToken(req);
+      return tokenPair.accessToken;
     },
     res,
     next,

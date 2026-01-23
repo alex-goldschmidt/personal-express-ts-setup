@@ -7,6 +7,7 @@ exports.queryListAsync = queryListAsync;
 exports.queryFirstAsync = queryFirstAsync;
 exports.insertAsync = insertAsync;
 exports.executeNonQueryAsync = executeNonQueryAsync;
+exports.countAsync = countAsync;
 const promise_1 = __importDefault(require("mysql2/promise"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
@@ -90,5 +91,9 @@ async function insertAsync(sql, params = []) {
 async function executeNonQueryAsync(sql, params = []) {
     const [result] = await pool.execute(sql, params);
     return result.affectedRows;
+}
+async function countAsync(sql, params) {
+    const [rows] = await pool.execute(sql, params);
+    return rows[0].count;
 }
 exports.default = pool;

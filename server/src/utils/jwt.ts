@@ -1,6 +1,8 @@
 import jwt, { JwtPayload, Secret } from "jsonwebtoken";
 import { ForbiddenError } from "../config/exceptions";
 import dotenv from "dotenv";
+import crypto from "crypto";
+import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 dotenv.config();
 
 export interface TokenPair {
@@ -71,4 +73,14 @@ export async function verifyToken(token: string): Promise<JwtPayload> {
     }
     throw new ForbiddenError("Authentication failed");
   }
+}
+
+export async function handleRefreshToken(refreshToken: string, userId: number) {
+  const hashedToken = await createTokenHash(refreshToken);
+
+  await RefreshTokenRepository.createRefreshTokenRecord(hashedToken, userId);
+}
+
+export async function createTokenHash(token: string) {
+  return crypto.createHash("sha256").update(token).digest("hex");
 }
