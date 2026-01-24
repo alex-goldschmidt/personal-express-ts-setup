@@ -22,12 +22,19 @@ export class RefreshTokenRepository {
   static async updateTokenRevokedStatus(
     tokenHash: string,
     isRevoked: RevokedFlag = 0,
-    userId: number
+    userId?: number
   ): Promise<number> {
+    let userIdClause = "";
+    let params: (string | RevokedFlag | number)[] = [isRevoked, tokenHash];
+    if (userId) {
+      userIdClause = "and userId = ?";
+      params.push(userId);
+    }
+
     return await executeNonQueryAsync(
       `UPDATE ${this.tableName} SET isRevoked = ?
-        WHERE tokenHash = ? and userId = ?`,
-      [isRevoked, tokenHash, userId]
+        WHERE tokenHash = ? ${userIdClause}`,
+      params
     );
   }
 

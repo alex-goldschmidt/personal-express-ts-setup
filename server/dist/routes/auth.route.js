@@ -8,4 +8,5 @@ authRouter.post("/register", auth_controller_1.signUp);
 authRouter.get("/:userId", authenticateToken_middleware_1.authenticateToken, auth_controller_1.getUserById);
 authRouter.post("/signIn", auth_controller_1.signIn);
 authRouter.post("/refreshToken", auth_controller_1.refreshToken);
+authRouter.post("/logout", auth_controller_1.logout);
 exports.default = authRouter;

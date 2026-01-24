@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshToken = exports.signIn = exports.getUserById = exports.signUp = void 0;
+exports.logout = exports.refreshToken = exports.signIn = exports.getUserById = exports.signUp = void 0;
 const auth_service_1 = require("../services/auth.service");
 const executeSafely_1 = __importDefault(require("../utils/executeSafely"));
 /**
@@ -43,7 +43,7 @@ exports.getUserById = getUserById;
  *
  * Params: {}
  *
- * Response: boolean
+ * Response: string
  */
 const signIn = async (req, res, next) => {
     const userInput = {
@@ -73,7 +73,7 @@ exports.signIn = signIn;
  *
  * Params: {}
  *
- * Response: Promise<string>
+ * Response: string
  */
 const refreshToken = async (req, res, next) => {
     return (0, executeSafely_1.default)(async () => {
@@ -84,3 +84,14 @@ const refreshToken = async (req, res, next) => {
     });
 };
 exports.refreshToken = refreshToken;
+/**
+ * POST /api/users/logout
+ *
+ * Params: {}
+ *
+ * Response: boolean
+ */
+const logout = async (req, res, next) => {
+    return (0, executeSafely_1.default)(() => auth_service_1.UserService.logout(req, res), res, next);
+};
+exports.logout = logout;

@@ -3,6 +3,7 @@ import { ForbiddenError } from "../config/exceptions";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
+import { Response } from "express";
 dotenv.config();
 
 export interface TokenPair {
@@ -83,4 +84,12 @@ export async function handleRefreshToken(refreshToken: string, userId: number) {
 
 export async function createTokenHash(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+export async function clearRefreshTokenCookie(res: Response): Promise<void> {
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+  });
 }

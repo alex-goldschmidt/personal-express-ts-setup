@@ -9,8 +9,14 @@ class RefreshTokenRepository {
         VALUES (?, ?)`, [tokenHash, userId]);
     }
     static async updateTokenRevokedStatus(tokenHash, isRevoked = 0, userId) {
+        let userIdClause = "";
+        let params = [isRevoked, tokenHash];
+        if (userId) {
+            userIdClause = "and userId = ?";
+            params.push(userId);
+        }
         return await (0, db_1.executeNonQueryAsync)(`UPDATE ${this.tableName} SET isRevoked = ?
-        WHERE tokenHash = ? and userId = ?`, [isRevoked, tokenHash, userId]);
+        WHERE tokenHash = ? ${userIdClause}`, params);
     }
     static async queryByUserIdAndTokenHash(userId, tokenHash) {
         return await (0, db_1.queryFirstAsync)(`SELECT isRevoked FROM ${this.tableName} WHERE userId = ? AND tokenHash = ?`, [userId, tokenHash]);

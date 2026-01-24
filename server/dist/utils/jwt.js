@@ -8,6 +8,7 @@ exports.generateAccessToken = generateAccessToken;
 exports.verifyToken = verifyToken;
 exports.handleRefreshToken = handleRefreshToken;
 exports.createTokenHash = createTokenHash;
+exports.clearRefreshTokenCookie = clearRefreshTokenCookie;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const exceptions_1 = require("../config/exceptions");
 const dotenv_1 = __importDefault(require("dotenv"));
@@ -19,7 +20,7 @@ async function generateTokenPair(userId) {
         sub: userId.toString(),
     };
     const accessToken = jsonwebtoken_1.default.sign(payload, process.env.JWT_ACCESS_TOKEN_SECRET, {
-        expiresIn: "1minute",
+        expiresIn: "15m",
         algorithm: "HS256",
     });
     const refreshToken = jsonwebtoken_1.default.sign(payload, process.env.JWT_REFRESH_TOKEN_SECRET, {
@@ -62,4 +63,11 @@ async function handleRefreshToken(refreshToken, userId) {
 }
 async function createTokenHash(token) {
     return crypto_1.default.createHash("sha256").update(token).digest("hex");
+}
+async function clearRefreshTokenCookie(res) {
+    res.clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+    });
 }

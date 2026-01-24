@@ -11,6 +11,7 @@ import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
 import { verify } from "@node-rs/argon2";
 import { Request } from "express";
 import {
+  clearRefreshTokenCookie,
   createTokenHash,
   generateTokenPair,
   handleRefreshToken,
@@ -20,6 +21,7 @@ import {
 import dotenv from "dotenv";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 dotenv.config();
+import { Response } from "express";
 
 export class UserService {
   static async getSingleUserById(userId: number): Promise<User | null> {
@@ -64,6 +66,10 @@ export class UserService {
 
     const userId = parseInt(decoded.sub!);
 
+    if (!userId || userId < 0) {
+      throw new UnauthorizedError("Invalid user identifier in token");
+    }
+
     const oldRefreshTokenHash = await createTokenHash(oldRefreshToken);
     const refreshTokenInDb =
       await RefreshTokenRepository.queryByUserIdAndTokenHash(
@@ -90,6 +96,22 @@ export class UserService {
     await handleRefreshToken(newTokenPair.refreshToken, userId);
 
     return newTokenPair;
+  }
+
+  static async logout(req: Request, res: Response): Promise<boolean> {
+    const oldRefreshToken = req.cookies?.["refreshToken"] as string;
+
+    if (!oldRefreshToken) {
+      await clearRefreshTokenCookie(res);
+      return true;
+    }
+    const tokenHash = await createTokenHash(oldRefreshToken);
+
+    await RefreshTokenRepository.updateTokenRevokedStatus(tokenHash, 1);
+
+    await clearRefreshTokenCookie(res);
+
+    return true;
   }
 
   static async createUser(userInput: UserInput): Promise<boolean> {

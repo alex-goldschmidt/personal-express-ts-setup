@@ -59,7 +59,7 @@ export const getUserById: RequestHandler<UserParams, User> = async (
  *
  * Params: {}
  *
- * Response: boolean
+ * Response: string
  */
 export const signIn: RequestHandler<{}, TokenPair, UserInput> = async (
   req,
@@ -99,7 +99,7 @@ export const signIn: RequestHandler<{}, TokenPair, UserInput> = async (
  *
  * Params: {}
  *
- * Response: Promise<string>
+ * Response: string
  */
 
 export const refreshToken: RequestHandler<{}, string> = async (
@@ -118,4 +118,16 @@ export const refreshToken: RequestHandler<{}, string> = async (
       successStatus: HttpStatusCode.SUCCESS,
     }
   );
+};
+
+/**
+ * POST /api/users/logout
+ *
+ * Params: {}
+ *
+ * Response: boolean
+ */
+
+export const logout: RequestHandler<{}, boolean> = async (req, res, next) => {
+  return executeSafely(() => UserService.logout(req, res), res, next);
 };

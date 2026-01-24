@@ -40,6 +40,9 @@ class UserService {
         }
         const decoded = await (0, jwt_1.verifyToken)(oldRefreshToken);
         const userId = parseInt(decoded.sub);
+        if (!userId || userId < 0) {
+            throw new exceptions_1.UnauthorizedError("Invalid user identifier in token");
+        }
         const oldRefreshTokenHash = await (0, jwt_1.createTokenHash)(oldRefreshToken);
         const refreshTokenInDb = await refreshToken_repository_1.RefreshTokenRepository.queryByUserIdAndTokenHash(userId, oldRefreshTokenHash);
         if (!refreshTokenInDb) {
@@ -52,6 +55,17 @@ class UserService {
         const newTokenPair = await (0, jwt_1.generateTokenPair)(userId);
         await (0, jwt_1.handleRefreshToken)(newTokenPair.refreshToken, userId);
         return newTokenPair;
+    }
+    static async logout(req, res) {
+        const oldRefreshToken = req.cookies?.["refreshToken"];
+        if (!oldRefreshToken) {
+            await (0, jwt_1.clearRefreshTokenCookie)(res);
+            return true;
+        }
+        const tokenHash = await (0, jwt_1.createTokenHash)(oldRefreshToken);
+        await refreshToken_repository_1.RefreshTokenRepository.updateTokenRevokedStatus(tokenHash, 1);
+        await (0, jwt_1.clearRefreshTokenCookie)(res);
+        return true;
     }
     static async createUser(userInput) {
         const validatedUser = (0, errorValidator_1.validateWithZod)(userCreateInput_model_1.UserInputSchema, userInput);
