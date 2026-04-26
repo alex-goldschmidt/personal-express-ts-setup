@@ -144,7 +144,7 @@ describe("auth.controller", () => {
       const req = {
         cookies: { refreshToken: "old" },
       } as Partial<Request> as Request;
-      const res = {} as Partial<Response> as Response;
+      const res = { cookie: jest.fn() } as Partial<Response> as Response;
       const next = jest.fn() as NextFunction;
       const tokenPair: TokenPair = {
         accessToken: "newAccess",
