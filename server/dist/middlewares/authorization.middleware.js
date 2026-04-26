@@ -10,7 +10,11 @@ const exceptions_1 = require("../config/exceptions");
  * It checks if the authenticated user matches the userId in the route params.
  */
 function authorizeUserId(req, _res, next) {
-    const authenticatedUserId = parseInt(req.user.sub ?? "");
+    const sub = req.user?.sub;
+    if (!sub) {
+        throw new exceptions_1.UnauthorizedError("Missing user identity");
+    }
+    const authenticatedUserId = parseInt(sub, 10);
     const requestedUserId = parseInt(req.params.userId);
     if (!Number.isInteger(authenticatedUserId) ||
         !Number.isInteger(requestedUserId)) {
