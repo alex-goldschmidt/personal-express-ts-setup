@@ -14,7 +14,11 @@ export function authorizeUserId(
   _res: Response,
   next: NextFunction
 ): void {
-  const authenticatedUserId = parseInt((req.user as JwtPayload).sub ?? "");
+  const sub = (req.user as JwtPayload)?.sub;
+  if (!sub) {
+    throw new UnauthorizedError("Missing user identity");
+  }
+  const authenticatedUserId = parseInt(sub, 10);
   const requestedUserId = parseInt(req.params.userId);
 
   if (
