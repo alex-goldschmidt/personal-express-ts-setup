@@ -86,6 +86,18 @@ export async function createTokenHash(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+export async function setRefreshTokenCookie(
+  res: Response,
+  refreshToken: string
+): Promise<void> {
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+  });
+}
+
 export async function clearRefreshTokenCookie(res: Response): Promise<void> {
   res.clearCookie("refreshToken", {
     httpOnly: true,

@@ -7,10 +7,11 @@ import {
   signUp,
 } from "../controllers/auth.controller";
 import { authenticateToken } from "../middlewares/authenticateToken.middleware";
+import { authorizeUserId } from "../middlewares/authorization.middleware";
 let authRouter: Router = Router();
 
 authRouter.post("/register", signUp);
-authRouter.get("/:userId", authenticateToken, getUserById);
+authRouter.get("/:userId", authenticateToken, authorizeUserId, getUserById);
 authRouter.post("/signIn", signIn);
 authRouter.post("/refreshToken", refreshToken);
 authRouter.post("/logout", logout);

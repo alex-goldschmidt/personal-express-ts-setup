@@ -4,10 +4,10 @@ import { UserInput } from "../models/userCreateInput.model";
 import { User } from "../dtos/auth.dto";
 import { HttpStatusCode } from "../constants/constants";
 import { RequestHandler } from "express";
-import { TokenPair } from "../utils/jwt";
+import { setRefreshTokenCookie } from "../utils/jwt";
 
 export interface UserParams {
-  userId: number;
+  userId: string;
 }
 
 /**
@@ -48,7 +48,8 @@ export const getUserById: RequestHandler<UserParams, User> = async (
   next
 ) => {
   return executeSafely(
-    () => UserService.getSingleUserById(req.params.userId),
+    async () =>
+      await UserService.getSingleUserById(parseInt(req.params.userId)),
     res,
     next
   );
@@ -61,7 +62,7 @@ export const getUserById: RequestHandler<UserParams, User> = async (
  *
  * Response: string
  */
-export const signIn: RequestHandler<{}, TokenPair, UserInput> = async (
+export const signIn: RequestHandler<{}, string, UserInput> = async (
   req,
   res,
   next
@@ -74,12 +75,7 @@ export const signIn: RequestHandler<{}, TokenPair, UserInput> = async (
     async () => {
       const tokens = await UserService.signIn(userInput);
 
-      res.cookie("refreshToken", tokens.refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      await setRefreshTokenCookie(res, tokens.refreshToken);
 
       return tokens.accessToken;
     },
@@ -110,6 +106,7 @@ export const refreshToken: RequestHandler<{}, string> = async (
   return executeSafely(
     async () => {
       const tokenPair = await UserService.refreshAccessToken(req);
+      await setRefreshTokenCookie(res, tokenPair.refreshToken);
       return tokenPair.accessToken;
     },
     res,
@@ -129,5 +126,5 @@ export const refreshToken: RequestHandler<{}, string> = async (
  */
 
 export const logout: RequestHandler<{}, boolean> = async (req, res, next) => {
-  return executeSafely(() => UserService.logout(req, res), res, next);
+  return executeSafely(async () => UserService.logout(req, res), res, next);
 };
