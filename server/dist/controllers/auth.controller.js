@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.logout = exports.refreshToken = exports.signIn = exports.getUserById = exports.signUp = void 0;
 const auth_service_1 = require("../services/auth.service");
 const executeSafely_1 = __importDefault(require("../utils/executeSafely"));
+const jwt_1 = require("../utils/jwt");
 /**
  * POST /api/users/register
  *
@@ -35,7 +36,7 @@ exports.signUp = signUp;
  * Response: User
  */
 const getUserById = async (req, res, next) => {
-    return (0, executeSafely_1.default)(() => auth_service_1.UserService.getSingleUserById(req.params.userId), res, next);
+    return (0, executeSafely_1.default)(async () => await auth_service_1.UserService.getSingleUserById(parseInt(req.params.userId)), res, next);
 };
 exports.getUserById = getUserById;
 /**
@@ -52,12 +53,7 @@ const signIn = async (req, res, next) => {
     };
     return (0, executeSafely_1.default)(async () => {
         const tokens = await auth_service_1.UserService.signIn(userInput);
-        res.cookie("refreshToken", tokens.refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000,
-        });
+        await (0, jwt_1.setRefreshTokenCookie)(res, tokens.refreshToken);
         return tokens.accessToken;
     }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,
@@ -78,6 +74,7 @@ exports.signIn = signIn;
 const refreshToken = async (req, res, next) => {
     return (0, executeSafely_1.default)(async () => {
         const tokenPair = await auth_service_1.UserService.refreshAccessToken(req);
+        await (0, jwt_1.setRefreshTokenCookie)(res, tokenPair.refreshToken);
         return tokenPair.accessToken;
     }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,
@@ -92,6 +89,6 @@ exports.refreshToken = refreshToken;
  * Response: boolean
  */
 const logout = async (req, res, next) => {
-    return (0, executeSafely_1.default)(() => auth_service_1.UserService.logout(req, res), res, next);
+    return (0, executeSafely_1.default)(async () => auth_service_1.UserService.logout(req, res), res, next);
 };
 exports.logout = logout;

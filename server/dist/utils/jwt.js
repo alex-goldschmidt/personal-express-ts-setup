@@ -8,6 +8,7 @@ exports.generateAccessToken = generateAccessToken;
 exports.verifyToken = verifyToken;
 exports.handleRefreshToken = handleRefreshToken;
 exports.createTokenHash = createTokenHash;
+exports.setRefreshTokenCookie = setRefreshTokenCookie;
 exports.clearRefreshTokenCookie = clearRefreshTokenCookie;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const exceptions_1 = require("../config/exceptions");
@@ -63,6 +64,14 @@ async function handleRefreshToken(refreshToken, userId) {
 }
 async function createTokenHash(token) {
     return crypto_1.default.createHash("sha256").update(token).digest("hex");
+}
+async function setRefreshTokenCookie(res, refreshToken) {
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+    });
 }
 async function clearRefreshTokenCookie(res) {
     res.clearCookie("refreshToken", {
