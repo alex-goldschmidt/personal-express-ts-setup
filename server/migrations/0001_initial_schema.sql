@@ -1,4 +1,4 @@
-CREATE TABLE user (
+CREATE TABLE user IF NOT EXISTS (
   userId INT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
   password VARCHAR(255) NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE user (
 );
 
 
-CREATE TABLE refreshTokens (
+CREATE TABLE refreshTokens if not exists (
   refreshTokenId INT AUTO_INCREMENT PRIMARY KEY,
   userId INTEGER NOT NULL REFERENCES user(userId) ON DELETE CASCADE,
   tokenHash varchar(64) not null, 
