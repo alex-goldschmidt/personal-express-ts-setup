@@ -16,6 +16,7 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const crypto_1 = __importDefault(require("crypto"));
 const refreshToken_repository_1 = require("../repositories/refreshToken.repository");
 dotenv_1.default.config();
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 async function generateTokenPair(userId) {
     const payload = {
         sub: userId.toString(),
@@ -31,6 +32,7 @@ async function generateTokenPair(userId) {
     const tokens = {
         accessToken: accessToken,
         refreshToken: refreshToken,
+        refreshTokenExpiration: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
     };
     return tokens;
 }
@@ -58,19 +60,19 @@ async function verifyToken(token) {
         throw new exceptions_1.ForbiddenError("Authentication failed");
     }
 }
-async function handleRefreshToken(refreshToken, userId) {
+async function handleRefreshToken(refreshToken, userId, expiration) {
     const hashedToken = await createTokenHash(refreshToken);
-    await refreshToken_repository_1.RefreshTokenRepository.createRefreshTokenRecord(hashedToken, userId);
+    await refreshToken_repository_1.RefreshTokenRepository.createRefreshTokenRecord(hashedToken, userId, expiration);
 }
 async function createTokenHash(token) {
     return crypto_1.default.createHash("sha256").update(token).digest("hex");
 }
-async function setRefreshTokenCookie(res, refreshToken) {
+async function setRefreshTokenCookie(res, refreshToken, refreshTokenExpiresAt) {
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+        maxAge: Math.max(refreshTokenExpiresAt.getTime() - Date.now(), 0),
     });
 }
 async function clearRefreshTokenCookie(res) {

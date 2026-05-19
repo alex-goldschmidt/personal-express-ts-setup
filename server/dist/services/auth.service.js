@@ -29,9 +29,9 @@ class UserService {
         if (!isPasswordValid) {
             throw new exceptions_1.UnauthorizedError("Incorrect password. Please try again.");
         }
-        const accessTokens = await (0, jwt_1.generateTokenPair)(existingUser.userId);
-        await (0, jwt_1.handleRefreshToken)(accessTokens.refreshToken, existingUser.userId);
-        return accessTokens;
+        const tokenPair = await (0, jwt_1.generateTokenPair)(existingUser.userId);
+        await (0, jwt_1.handleRefreshToken)(tokenPair.refreshToken, existingUser.userId, tokenPair.refreshTokenExpiration);
+        return tokenPair;
     }
     static async refreshAccessToken(req) {
         const oldRefreshToken = req.cookies?.["refreshToken"];
@@ -53,7 +53,7 @@ class UserService {
         }
         await refreshToken_repository_1.RefreshTokenRepository.updateTokenRevokedStatus(oldRefreshTokenHash, 1, userId);
         const newTokenPair = await (0, jwt_1.generateTokenPair)(userId);
-        await (0, jwt_1.handleRefreshToken)(newTokenPair.refreshToken, userId);
+        await (0, jwt_1.handleRefreshToken)(newTokenPair.refreshToken, userId, newTokenPair.refreshTokenExpiration);
         return newTokenPair;
     }
     static async logout(req, res) {

@@ -53,7 +53,7 @@ const signIn = async (req, res, next) => {
     };
     return (0, executeSafely_1.default)(async () => {
         const tokens = await auth_service_1.UserService.signIn(userInput);
-        await (0, jwt_1.setRefreshTokenCookie)(res, tokens.refreshToken);
+        await (0, jwt_1.setRefreshTokenCookie)(res, tokens.refreshToken, tokens.refreshTokenExpiration);
         return tokens.accessToken;
     }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,
@@ -74,7 +74,7 @@ exports.signIn = signIn;
 const refreshToken = async (req, res, next) => {
     return (0, executeSafely_1.default)(async () => {
         const tokenPair = await auth_service_1.UserService.refreshAccessToken(req);
-        await (0, jwt_1.setRefreshTokenCookie)(res, tokenPair.refreshToken);
+        await (0, jwt_1.setRefreshTokenCookie)(res, tokenPair.refreshToken, tokenPair.refreshTokenExpiration);
         return tokenPair.accessToken;
     }, res, next, {
         successStatus: 200 /* HttpStatusCode.SUCCESS */,

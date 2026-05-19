@@ -101,6 +101,7 @@ describe("UserService", () => {
       const tokens: TokenPair = {
         accessToken: "access123",
         refreshToken: "refresh123",
+        refreshTokenExpiration: new Date("2026-01-22T22:11:35.000Z"),
       };
 
       mockedUserRepo.queryByEmail.mockResolvedValueOnce(userInDb as User);
@@ -118,7 +119,8 @@ describe("UserService", () => {
       expect(mockedVerify).toHaveBeenCalledWith("hash", userInput.password);
       expect(mockedHandleRefreshToken).toHaveBeenCalledWith(
         tokens.refreshToken,
-        userInDb.userId
+        userInDb.userId,
+        tokens.refreshTokenExpiration
       );
     });
 
@@ -155,6 +157,7 @@ describe("UserService", () => {
       const tokens: TokenPair = {
         accessToken: "newAccess",
         refreshToken: "newRefresh",
+        refreshTokenExpiration: new Date("2026-01-22T22:11:35.000Z"),
       };
 
       mockedVerifyToken.mockResolvedValueOnce({ sub: "10" } as JwtPayload);
@@ -163,6 +166,7 @@ describe("UserService", () => {
         userId: 10,
         tokenHash: "oldHash",
         isRevoked: 0,
+        expiration: "2026-01-22 22:11:35",
       } as RefreshToken);
       mockedRefreshRepo.updateTokenRevokedStatus.mockResolvedValueOnce(1);
       mockedGenerateTokenPair.mockResolvedValueOnce(tokens);
@@ -179,7 +183,8 @@ describe("UserService", () => {
       );
       expect(mockedHandleRefreshToken).toHaveBeenCalledWith(
         tokens.refreshToken,
-        10
+        10,
+        tokens.refreshTokenExpiration
       );
     });
 
@@ -218,6 +223,7 @@ describe("UserService", () => {
         userId: 3,
         tokenHash: "hash",
         isRevoked: 1,
+        expiration: "2026-01-22 22:11:35",
       } as RefreshToken);
 
       await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(

@@ -48,11 +48,15 @@ export class UserService {
       throw new UnauthorizedError("Incorrect password. Please try again.");
     }
 
-    const accessTokens = await generateTokenPair(existingUser.userId);
+    const tokenPair = await generateTokenPair(existingUser.userId);
 
-    await handleRefreshToken(accessTokens.refreshToken, existingUser.userId);
+    await handleRefreshToken(
+      tokenPair.refreshToken,
+      existingUser.userId,
+      tokenPair.refreshTokenExpiration
+    );
 
-    return accessTokens;
+    return tokenPair;
   }
 
   static async refreshAccessToken(req: Request): Promise<TokenPair> {
@@ -93,7 +97,11 @@ export class UserService {
 
     const newTokenPair = await generateTokenPair(userId);
 
-    await handleRefreshToken(newTokenPair.refreshToken, userId);
+    await handleRefreshToken(
+      newTokenPair.refreshToken,
+      userId,
+      newTokenPair.refreshTokenExpiration
+    );
 
     return newTokenPair;
   }

@@ -103,6 +103,7 @@ describe("auth.controller", () => {
       const tokenPair: TokenPair = {
         accessToken: "access",
         refreshToken: "refresh",
+        refreshTokenExpiration: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
       mockedUserService.signIn.mockResolvedValueOnce(tokenPair);
 
@@ -132,8 +133,11 @@ describe("auth.controller", () => {
           httpOnly: true,
           secure: true,
           sameSite: "strict",
-          maxAge: 7 * 24 * 60 * 60 * 1000,
+          maxAge: expect.any(Number),
         })
+      );
+      expect((res.cookie as jest.Mock).mock.calls[0][2].maxAge).toBeGreaterThan(
+        0
       );
       expect(result).toBe(tokenPair.accessToken);
     });
@@ -149,6 +153,7 @@ describe("auth.controller", () => {
       const tokenPair: TokenPair = {
         accessToken: "newAccess",
         refreshToken: "newRefresh",
+        refreshTokenExpiration: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       };
       mockedUserService.refreshAccessToken.mockResolvedValueOnce(tokenPair);
 
@@ -162,6 +167,13 @@ describe("auth.controller", () => {
 
       const result = await fn();
       expect(mockedUserService.refreshAccessToken).toHaveBeenCalledWith(req);
+      expect(res.cookie).toHaveBeenCalledWith(
+        "refreshToken",
+        tokenPair.refreshToken,
+        expect.objectContaining({
+          maxAge: expect.any(Number),
+        })
+      );
       expect(result).toBe(tokenPair.accessToken);
     });
   });

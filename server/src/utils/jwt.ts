@@ -9,7 +9,10 @@ dotenv.config();
 export interface TokenPair {
   accessToken: string;
   refreshToken: string;
+  refreshTokenExpiration: Date;
 }
+
+const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 export async function generateTokenPair(userId: number): Promise<TokenPair> {
   const payload: JwtPayload = {
@@ -37,6 +40,7 @@ export async function generateTokenPair(userId: number): Promise<TokenPair> {
   const tokens: TokenPair = {
     accessToken: accessToken,
     refreshToken: refreshToken,
+    refreshTokenExpiration: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
   };
 
   return tokens;
@@ -76,10 +80,18 @@ export async function verifyToken(token: string): Promise<JwtPayload> {
   }
 }
 
-export async function handleRefreshToken(refreshToken: string, userId: number) {
+export async function handleRefreshToken(
+  refreshToken: string,
+  userId: number,
+  expiration: Date
+) {
   const hashedToken = await createTokenHash(refreshToken);
 
-  await RefreshTokenRepository.createRefreshTokenRecord(hashedToken, userId);
+  await RefreshTokenRepository.createRefreshTokenRecord(
+    hashedToken,
+    userId,
+    expiration
+  );
 }
 
 export async function createTokenHash(token: string) {
@@ -88,13 +100,14 @@ export async function createTokenHash(token: string) {
 
 export async function setRefreshTokenCookie(
   res: Response,
-  refreshToken: string
+  refreshToken: string,
+  refreshTokenExpiresAt: Date
 ): Promise<void> {
   res.cookie("refreshToken", refreshToken, {
     httpOnly: true,
     secure: true,
     sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, //7 days
+    maxAge: Math.max(refreshTokenExpiresAt.getTime() - Date.now(), 0),
   });
 }
 

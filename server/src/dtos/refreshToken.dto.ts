@@ -4,6 +4,7 @@ export interface RefreshToken extends RowDataPacket {
   tokenHash: string;
   userId: number;
   isRevoked?: RevokedFlag;
+  expiration?: string;
   inserted?: string;
   updated?: string;
 }

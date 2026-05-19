@@ -75,7 +75,11 @@ export const signIn: RequestHandler<{}, string, UserInput> = async (
     async () => {
       const tokens = await UserService.signIn(userInput);
 
-      await setRefreshTokenCookie(res, tokens.refreshToken);
+      await setRefreshTokenCookie(
+        res,
+        tokens.refreshToken,
+        tokens.refreshTokenExpiration
+      );
 
       return tokens.accessToken;
     },
@@ -106,7 +110,11 @@ export const refreshToken: RequestHandler<{}, string> = async (
   return executeSafely(
     async () => {
       const tokenPair = await UserService.refreshAccessToken(req);
-      await setRefreshTokenCookie(res, tokenPair.refreshToken);
+      await setRefreshTokenCookie(
+        res,
+        tokenPair.refreshToken,
+        tokenPair.refreshTokenExpiration
+      );
       return tokenPair.accessToken;
     },
     res,

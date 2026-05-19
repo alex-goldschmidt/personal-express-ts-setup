@@ -7,11 +7,12 @@ CREATE TABLE user IF NOT EXISTS (
 );
 
 
-CREATE TABLE refreshTokens if not exists (
+CREATE TABLE refreshToken if not exists (
   refreshTokenId INT AUTO_INCREMENT PRIMARY KEY,
   userId INTEGER NOT NULL REFERENCES user(userId) ON DELETE CASCADE,
   tokenHash varchar(64) not null, 
   isRevoked TINYINT NOT NULL DEFAULT 0,
+  expiration DATETIME NOT NULL,
   inserted TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

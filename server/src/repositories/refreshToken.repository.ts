@@ -6,16 +6,17 @@ import {
 import { RefreshToken, RevokedFlag } from "../dtos/refreshToken.dto";
 
 export class RefreshTokenRepository {
-  static readonly tableName = "refreshTokens";
+  static readonly tableName = "refreshToken";
 
   static async createRefreshTokenRecord(
     tokenHash: string,
-    userId: number
+    userId: number,
+    expiration: Date
   ): Promise<number> {
     return await insertAsync(
-      `INSERT INTO ${this.tableName} (tokenHash, userId) 
-        VALUES (?, ?)`,
-      [tokenHash, userId]
+      `INSERT INTO ${this.tableName} (tokenHash, userId, expiration) 
+        VALUES (?, ?, ?)`,
+      [tokenHash, userId, expiration]
     );
   }
 
