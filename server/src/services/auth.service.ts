@@ -1,5 +1,5 @@
 import { UserRepository } from "../repositories/auth.repository";
-import { User } from "../dtos/auth.dto";
+import { UserDTO } from "../dtos/user.dto";
 import { validateWithZod } from "../utils/errorValidator";
 import {
   ConflictError,
@@ -8,6 +8,7 @@ import {
 } from "../config/exceptions";
 import { hashPassword } from "../utils/password";
 import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
+import { CreateUserModel } from "../models/user.model";
 import { verify } from "@node-rs/argon2";
 import { Request } from "express";
 import {
@@ -24,7 +25,7 @@ dotenv.config();
 import { Response } from "express";
 
 export class UserService {
-  static async getSingleUserById(userId: number): Promise<User | null> {
+  static async getSingleUserById(userId: number): Promise<UserDTO | null> {
     const result = await UserRepository.queryByUserId(userId);
     return result;
   }
@@ -134,10 +135,10 @@ export class UserService {
 
     userInput.password = await hashPassword(userInput.password);
 
-    const user = {
+    const user: CreateUserModel = {
       email: userInput.email,
       password: userInput.password,
-    } as User;
+    };
 
     return (await UserRepository.createUser(user)) > 0;
   }

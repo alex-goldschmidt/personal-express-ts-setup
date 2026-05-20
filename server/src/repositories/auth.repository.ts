@@ -4,29 +4,31 @@ import {
   insertAsync,
   executeNonQueryAsync,
 } from "../config/db";
-import { User } from "../dtos/auth.dto";
+import { AuthUserDTO } from "../dtos/projections/user.projection";
+import { UserDTO } from "../dtos/user.dto";
+import { CreateUserModel } from "../models/user.model";
 export class UserRepository {
   static readonly tableName = "user";
 
-  static async queryAllUsers(): Promise<User[]> {
-    return await queryListAsync<User>(`SELECT * FROM ${this.tableName}`);
+  static async queryAllUsers(): Promise<UserDTO[]> {
+    return await queryListAsync<UserDTO>(`SELECT * FROM ${this.tableName}`);
   }
 
-  static async queryByUserId(userId: number): Promise<User | null> {
-    return await queryFirstAsync<User>(
+  static async queryByUserId(userId: number): Promise<UserDTO | null> {
+    return await queryFirstAsync<UserDTO>(
       `SELECT * FROM ${this.tableName} WHERE userId = ?`,
       [userId]
     );
   }
 
-  static async queryByEmail(email: string): Promise<User | null> {
-    return await queryFirstAsync<User>(
+  static async queryByEmail(email: string): Promise<AuthUserDTO | null> {
+    return await queryFirstAsync<AuthUserDTO>(
       `SELECT userId, email, password FROM ${this.tableName} WHERE email = ?`,
       [email]
     );
   }
 
-  static async createUser(newUser: User): Promise<number> {
+  static async createUser(newUser: CreateUserModel): Promise<number> {
     return await insertAsync(
       `INSERT INTO ${this.tableName} (email, password) 
       VALUES (?, ?)`,

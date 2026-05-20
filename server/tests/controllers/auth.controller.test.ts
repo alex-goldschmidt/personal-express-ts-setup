@@ -12,7 +12,7 @@ import { UserService } from "../../src/services/auth.service";
 import executeSafely from "../../src/utils/executeSafely";
 import { TokenPair } from "../../src/utils/jwt";
 import { UserInput } from "../../src/models/userCreateInput.model";
-import { User } from "../../src/dtos/auth.dto";
+import { UserDTO } from "../../src/dtos/user.dto";
 
 jest.mock("../../src/services/auth.service", () => ({
   UserService: {
@@ -79,7 +79,7 @@ describe("auth.controller", () => {
         userId: 5,
         email: "a@b.com",
         password: "hash",
-      } as User);
+      } as UserDTO);
 
       await getUserById(req, res, next);
 

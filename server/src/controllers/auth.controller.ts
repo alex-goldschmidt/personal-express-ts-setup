@@ -1,7 +1,7 @@
 import { UserService } from "../services/auth.service";
 import executeSafely from "../utils/executeSafely";
 import { UserInput } from "../models/userCreateInput.model";
-import { User } from "../dtos/auth.dto";
+import { UserDTO } from "../dtos/user.dto";
 import { HttpStatusCode } from "../constants/constants";
 import { RequestHandler } from "express";
 import { setRefreshTokenCookie } from "../utils/jwt";
@@ -40,9 +40,9 @@ export const signUp: RequestHandler<{}, boolean, UserInput> = async (
  *
  * Params: { userId : number }
  *
- * Response: User
+ * Response: UserDTO
  */
-export const getUserById: RequestHandler<UserParams, User> = async (
+export const getUserById: RequestHandler<UserParams, UserDTO> = async (
   req,
   res,
   next

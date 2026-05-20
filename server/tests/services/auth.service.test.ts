@@ -3,7 +3,8 @@ import { verify } from "@node-rs/argon2";
 import { UserService } from "../../src/services/auth.service";
 import { UserRepository } from "../../src/repositories/auth.repository";
 import { RefreshTokenRepository } from "../../src/repositories/refreshToken.repository";
-import { User } from "../../src/dtos/auth.dto";
+import { AuthUserDTO } from "../../src/dtos/projections/user.projection";
+import { UserDTO } from "../../src/dtos/user.dto";
 import { UserInput } from "../../src/models/userCreateInput.model";
 import { validateWithZod } from "../../src/utils/errorValidator";
 import {
@@ -20,7 +21,7 @@ import {
   ForbiddenError,
   UnauthorizedError,
 } from "../../src/config/exceptions";
-import { RefreshToken } from "../../src/dtos/refreshToken.dto";
+import { RevokedStatus } from "../../src/dtos/projections/refreshToken.projection";
 import { JwtPayload } from "jsonwebtoken";
 
 jest.mock("../../src/repositories/auth.repository.ts");
@@ -82,8 +83,8 @@ describe("UserService", () => {
       password: "hash",
       inserted: "2026-01-17 09:02:58",
       updated: "2026-01-17 09:02:58",
-    } as User;
-    mockedUserRepo.queryByUserId.mockResolvedValueOnce(fake as User);
+    } as UserDTO;
+    mockedUserRepo.queryByUserId.mockResolvedValueOnce(fake as UserDTO);
 
     const userInDb = await UserService.getSingleUserById(1);
     expect(userInDb).toEqual(fake);
@@ -104,7 +105,9 @@ describe("UserService", () => {
         refreshTokenExpiration: new Date("2026-01-22T22:11:35.000Z"),
       };
 
-      mockedUserRepo.queryByEmail.mockResolvedValueOnce(userInDb as User);
+      mockedUserRepo.queryByEmail.mockResolvedValueOnce(
+        userInDb as AuthUserDTO
+      );
       mockedVerify.mockResolvedValueOnce(true);
       mockedGenerateTokenPair.mockResolvedValueOnce(tokens);
 
@@ -139,7 +142,7 @@ describe("UserService", () => {
         userId: 2,
         email: userInput.email,
         password: "hash",
-      } as User);
+      } as AuthUserDTO);
       mockedVerify.mockResolvedValueOnce(false);
 
       await expect(UserService.signIn(userInput)).rejects.toBeInstanceOf(
@@ -163,11 +166,8 @@ describe("UserService", () => {
       mockedVerifyToken.mockResolvedValueOnce({ sub: "10" } as JwtPayload);
       mockedCreateTokenHash.mockResolvedValueOnce("oldHash");
       mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce({
-        userId: 10,
-        tokenHash: "oldHash",
         isRevoked: 0,
-        expiration: "2026-01-22 22:11:35",
-      } as RefreshToken);
+      } as RevokedStatus);
       mockedRefreshRepo.updateTokenRevokedStatus.mockResolvedValueOnce(1);
       mockedGenerateTokenPair.mockResolvedValueOnce(tokens);
 
@@ -220,11 +220,8 @@ describe("UserService", () => {
       mockedVerifyToken.mockResolvedValueOnce({ sub: "3" } as JwtPayload);
       mockedCreateTokenHash.mockResolvedValueOnce("hash");
       mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce({
-        userId: 3,
-        tokenHash: "hash",
         isRevoked: 1,
-        expiration: "2026-01-22 22:11:35",
-      } as RefreshToken);
+      } as RevokedStatus);
 
       await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(
         ForbiddenError
@@ -303,7 +300,7 @@ describe("UserService", () => {
         userId: 1,
         email: input.email,
         password: "existing",
-      } as User);
+      } as AuthUserDTO);
 
       await expect(UserService.createUser(input)).rejects.toBeInstanceOf(
         ConflictError

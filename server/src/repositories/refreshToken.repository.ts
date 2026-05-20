@@ -3,7 +3,8 @@ import {
   insertAsync,
   queryFirstAsync,
 } from "../config/db";
-import { RefreshToken, RevokedFlag } from "../dtos/refreshToken.dto";
+import { RevokedStatus } from "../dtos/projections/refreshToken.projection";
+import { RevokedFlag } from "../models/revokedFlag.model";
 
 export class RefreshTokenRepository {
   static readonly tableName = "refreshToken";
@@ -42,8 +43,8 @@ export class RefreshTokenRepository {
   static async queryByUserIdAndTokenHash(
     userId: number,
     tokenHash: string
-  ): Promise<RefreshToken | null> {
-    return await queryFirstAsync<RefreshToken>(
+  ): Promise<RevokedStatus | null> {
+    return await queryFirstAsync<RevokedStatus>(
       `SELECT isRevoked FROM ${this.tableName} WHERE userId = ? AND tokenHash = ?`,
       [userId, tokenHash]
     );
