@@ -9,7 +9,8 @@
     "dev": "npm run build && nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/app.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "devstart": "DEBUG=personal-express-ts-setup* npm run dev"
+    "devstart": "DEBUG=personal-express-ts-setup* npm run dev",
+    "generate:resource": "node scripts/generate-resource.js"
   },
   "keywords": [],
   "author": "",
