@@ -13,9 +13,7 @@ Then add the persistence/API layers manually when the resource needs them:
 - `src/controllers/<resource>.controller.ts`
 - `src/services/<resource>.service.ts`
 
-Typical example already in the repo:
-
-- `practiceone`
+Follow the naming and endpoint examples below when adding a resource.
 
 ## Responsibilities
 

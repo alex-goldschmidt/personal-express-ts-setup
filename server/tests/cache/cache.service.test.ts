@@ -34,7 +34,7 @@ describe("CacheService", () => {
   });
 
   it("returns null by default when no cache client is configured", async () => {
-    const result = await CacheService.get("practices:all");
+    const result = await CacheService.get("items:all");
 
     expect(result).toBeNull();
   });
@@ -42,21 +42,19 @@ describe("CacheService", () => {
   it("uses the configured cache client", async () => {
     CacheService.configure(new InMemoryCacheClient());
 
-    await CacheService.set("practices:1", { practiceId: 1 });
+    await CacheService.set("items:1", { itemId: 1 });
 
-    const result = await CacheService.get<{ practiceId: number }>(
-      "practices:1"
-    );
+    const result = await CacheService.get<{ itemId: number }>("items:1");
 
-    expect(result).toEqual({ practiceId: 1 });
+    expect(result).toEqual({ itemId: 1 });
   });
 
   it("loads and caches a missing value", async () => {
     CacheService.configure(new InMemoryCacheClient());
     const loader = jest.fn(async () => ["cached result"]);
 
-    const firstResult = await CacheService.getOrSet("practices:all", loader);
-    const secondResult = await CacheService.getOrSet("practices:all", loader);
+    const firstResult = await CacheService.getOrSet("items:all", loader);
+    const secondResult = await CacheService.getOrSet("items:all", loader);
 
     expect(firstResult).toEqual(["cached result"]);
     expect(secondResult).toEqual(["cached result"]);

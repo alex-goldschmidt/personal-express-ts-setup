@@ -20,7 +20,7 @@ describe("executeSafely", () => {
 
   describe("successful responses", () => {
     it("should send data with default 200 status", async () => {
-      const data = { id: 1, name: "Test Practice" };
+      const data = { id: 1, name: "Test Item" };
       const fn = jest.fn().mockResolvedValueOnce(data);
 
       await executeSafely(fn, mockRes as Response, mockNext);
@@ -83,28 +83,28 @@ describe("executeSafely", () => {
     it("should handle undefined with onEmpty config", async () => {
       const fn = jest.fn().mockResolvedValueOnce(undefined);
       const opts: ExecutorOptions = {
-        onEmpty: { status: 404, message: "Practice not found" },
+        onEmpty: { status: 404, message: "Item not found" },
       };
 
       await executeSafely(fn, mockRes as Response, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: "Practice not found",
+        message: "Item not found",
       });
     });
 
     it("should handle empty array with onEmpty config", async () => {
       const fn = jest.fn().mockResolvedValueOnce([]);
       const opts: ExecutorOptions = {
-        onEmpty: { status: 404, message: "No practices found" },
+        onEmpty: { status: 404, message: "No items found" },
       };
 
       await executeSafely(fn, mockRes as Response, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({
-        message: "No practices found",
+        message: "No items found",
       });
     });
 
