@@ -3,8 +3,10 @@ import {
   insertAsync,
   queryFirstAsync,
 } from "../config/db";
-import { RevokedStatus } from "../dtos/projections/refreshToken.projection";
-import { RevokedFlag } from "../models/revokedFlag.model";
+import {
+  RevokedFlag,
+  RevokedStatus,
+} from "../dtos/projections/refreshToken.projection";
 
 export class RefreshTokenRepository {
   static readonly tableName = "refreshToken";

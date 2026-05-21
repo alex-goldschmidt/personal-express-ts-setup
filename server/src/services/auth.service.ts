@@ -1,5 +1,5 @@
 import { UserRepository } from "../repositories/auth.repository";
-import { UserDTO } from "../dtos/user.dto";
+import { toUserModel } from "../mappers/user.mapper";
 import { validateWithZod } from "../utils/errorValidator";
 import {
   ConflictError,
@@ -8,7 +8,8 @@ import {
 } from "../config/exceptions";
 import { hashPassword } from "../utils/password";
 import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
-import { CreateUserModel } from "../models/user.model";
+import { CreateUserRecord } from "../types/createUserRecord";
+import { User } from "../models/user.model";
 import { verify } from "@node-rs/argon2";
 import { Request } from "express";
 import {
@@ -25,9 +26,10 @@ dotenv.config();
 import { Response } from "express";
 
 export class UserService {
-  static async getSingleUserById(userId: number): Promise<UserDTO | null> {
+  static async getSingleUserById(userId: number): Promise<User | null> {
     const result = await UserRepository.queryByUserId(userId);
-    return result;
+    const user = result ? toUserModel(result) : null;
+    return user;
   }
 
   static async signIn(userInput: UserInput): Promise<TokenPair> {
@@ -133,11 +135,11 @@ export class UserService {
       throw new ConflictError("User with this email already exists.");
     }
 
-    userInput.password = await hashPassword(userInput.password);
+    const hashedPassword = await hashPassword(validatedUser.password);
 
-    const user: CreateUserModel = {
-      email: userInput.email,
-      password: userInput.password,
+    const user: CreateUserRecord = {
+      email: validatedUser.email,
+      password: hashedPassword,
     };
 
     return (await UserRepository.createUser(user)) > 0;

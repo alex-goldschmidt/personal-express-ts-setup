@@ -1,7 +1,10 @@
 import { UserService } from "../services/auth.service";
 import executeSafely from "../utils/executeSafely";
-import { UserInput } from "../models/userCreateInput.model";
-import { UserDTO } from "../dtos/user.dto";
+import { validateWithZod } from "../utils/errorValidator";
+import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
+import { AuthTokenResponse } from "../models/auth.model";
+import { SuccessResponse } from "../models/common.model";
+import { User } from "../models/user.model";
 import { HttpStatusCode } from "../constants/constants";
 import { RequestHandler } from "express";
 import { setRefreshTokenCookie } from "../utils/jwt";
@@ -15,23 +18,22 @@ export interface UserParams {
  *
  * Params: {}
  *
- * Response: boolean
+ * Response: SuccessResponse
  */
-export const signUp: RequestHandler<{}, boolean, UserInput> = async (
+export const signUp: RequestHandler<{}, SuccessResponse, UserInput> = async (
   req,
   res,
   next
 ) => {
-  const userInput: UserInput = {
-    email: req.body.email,
-    password: req.body.password,
-  };
+  const userInput = validateWithZod(UserInputSchema, req.body);
+
   return executeSafely(() => UserService.createUser(userInput), res, next, {
     successStatus: HttpStatusCode.CREATED,
     onEmpty: {
       status: HttpStatusCode.SERVER_ERROR,
       message: "User not created",
     },
+    transform: (success) => ({ success }),
   });
 };
 
@@ -40,9 +42,9 @@ export const signUp: RequestHandler<{}, boolean, UserInput> = async (
  *
  * Params: { userId : number }
  *
- * Response: UserDTO
+ * Response: User
  */
-export const getUserById: RequestHandler<UserParams, UserDTO> = async (
+export const getUserById: RequestHandler<UserParams, User> = async (
   req,
   res,
   next
@@ -60,17 +62,15 @@ export const getUserById: RequestHandler<UserParams, UserDTO> = async (
  *
  * Params: {}
  *
- * Response: string
+ * Response: AuthTokenResponse
  */
-export const signIn: RequestHandler<{}, string, UserInput> = async (
+export const signIn: RequestHandler<{}, AuthTokenResponse, UserInput> = async (
   req,
   res,
   next
 ) => {
-  const userInput: UserInput = {
-    email: req.body.email,
-    password: req.body.password,
-  };
+  const userInput = validateWithZod(UserInputSchema, req.body);
+
   return executeSafely(
     async () => {
       const tokens = await UserService.signIn(userInput);
@@ -80,8 +80,7 @@ export const signIn: RequestHandler<{}, string, UserInput> = async (
         tokens.refreshToken,
         tokens.refreshTokenExpiration
       );
-
-      return tokens.accessToken;
+      return { accessToken: tokens.accessToken };
     },
     res,
     next,
@@ -99,10 +98,10 @@ export const signIn: RequestHandler<{}, string, UserInput> = async (
  *
  * Params: {}
  *
- * Response: string
+ * Response: AuthTokenResponse
  */
 
-export const refreshToken: RequestHandler<{}, string> = async (
+export const refreshToken: RequestHandler<{}, AuthTokenResponse> = async (
   req,
   res,
   next
@@ -115,7 +114,9 @@ export const refreshToken: RequestHandler<{}, string> = async (
         tokenPair.refreshToken,
         tokenPair.refreshTokenExpiration
       );
-      return tokenPair.accessToken;
+      return {
+        accessToken: tokenPair.accessToken,
+      };
     },
     res,
     next,
@@ -130,9 +131,15 @@ export const refreshToken: RequestHandler<{}, string> = async (
  *
  * Params: {}
  *
- * Response: boolean
+ * Response: SuccessResponse
  */
 
-export const logout: RequestHandler<{}, boolean> = async (req, res, next) => {
-  return executeSafely(async () => UserService.logout(req, res), res, next);
+export const logout: RequestHandler<{}, SuccessResponse> = async (
+  req,
+  res,
+  next
+) => {
+  return executeSafely(async () => UserService.logout(req, res), res, next, {
+    transform: (success) => ({ success }),
+  });
 };

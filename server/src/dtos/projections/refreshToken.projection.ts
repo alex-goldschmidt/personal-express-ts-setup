@@ -1,5 +1,6 @@
 import { DbProjection } from "../../types/dbTypes/dbProjection";
-import { RevokedFlag } from "../../models/revokedFlag.model";
+
+export type RevokedFlag = 0 | 1;
 
 export type RevokedStatus = DbProjection<{
   isRevoked: RevokedFlag;

@@ -12,7 +12,10 @@ import { UserService } from "../../src/services/auth.service";
 import executeSafely from "../../src/utils/executeSafely";
 import { TokenPair } from "../../src/utils/jwt";
 import { UserInput } from "../../src/models/userCreateInput.model";
-import { UserDTO } from "../../src/dtos/user.dto";
+import { SuccessResponse } from "../../src/models/common.model";
+import { AuthTokenResponse } from "../../src/models/auth.model";
+import { User } from "../../src/models/user.model";
+import { ValidationError } from "../../src/config/exceptions";
 
 jest.mock("../../src/services/auth.service", () => ({
   UserService: {
@@ -61,25 +64,30 @@ describe("auth.controller", () => {
           status: HttpStatusCode.SERVER_ERROR,
           message: "User not created",
         },
+        transform: expect.any(Function),
       });
 
-      await fn();
+      const result = await fn();
       expect(mockedUserService.createUser).toHaveBeenCalledWith(
         req.body as UserInput
       );
+      expect(result).toBe(true);
+      expect(opts?.transform?.(result)).toEqual({
+        success: true,
+      } satisfies SuccessResponse);
     });
   });
 
   describe("getUserById", () => {
     it("delegates to UserService.getSingleUserById via executeSafely", async () => {
-      const req = { params: { userId: 5 } } as unknown as Request<UserParams>;
+      const req = { params: { userId: "5" } } as unknown as Request<UserParams>;
       const res = {} as Partial<Response> as Response;
       const next = jest.fn() as NextFunction;
-      mockedUserService.getSingleUserById.mockResolvedValueOnce({
+      const user = {
         userId: 5,
         email: "a@b.com",
-        password: "hash",
-      } as UserDTO);
+      } satisfies User;
+      mockedUserService.getSingleUserById.mockResolvedValueOnce(user);
 
       await getUserById(req, res, next);
 
@@ -88,12 +96,27 @@ describe("auth.controller", () => {
       expect(resArg).toBe(res);
       expect(nextArg).toBe(next);
 
-      await fn();
+      const result = await fn();
       expect(mockedUserService.getSingleUserById).toHaveBeenCalledWith(5);
+      expect(result).toEqual(user);
     });
   });
 
   describe("signIn", () => {
+    it("validates request body before calling executeSafely", async () => {
+      const req = {
+        body: { email: "not-an-email", password: "short" },
+      } as Partial<Request> as Request;
+      const res = { cookie: jest.fn() } as Partial<Response> as Response;
+      const next = jest.fn() as NextFunction;
+
+      await expect(signIn(req, res, next)).rejects.toBeInstanceOf(
+        ValidationError
+      );
+
+      expect(mockedExecuteSafely).not.toHaveBeenCalled();
+    });
+
     it("sets refresh cookie and returns access token", async () => {
       const req = {
         body: { email: "john@example.com", password: "Password123" },
@@ -139,7 +162,9 @@ describe("auth.controller", () => {
       expect((res.cookie as jest.Mock).mock.calls[0][2].maxAge).toBeGreaterThan(
         0
       );
-      expect(result).toBe(tokenPair.accessToken);
+      expect(result).toEqual({
+        accessToken: tokenPair.accessToken,
+      } satisfies AuthTokenResponse);
     });
   });
 
@@ -174,7 +199,9 @@ describe("auth.controller", () => {
           maxAge: expect.any(Number),
         })
       );
-      expect(result).toBe(tokenPair.accessToken);
+      expect(result).toEqual({
+        accessToken: tokenPair.accessToken,
+      } satisfies AuthTokenResponse);
     });
   });
 
@@ -191,13 +218,16 @@ describe("auth.controller", () => {
       await logout(req, res, next);
 
       expect(mockedExecuteSafely).toHaveBeenCalledTimes(1);
-      const [fn, resArg, nextArg] = mockedExecuteSafely.mock.calls[0];
+      const [fn, resArg, nextArg, opts] = mockedExecuteSafely.mock.calls[0];
       expect(resArg).toBe(res);
       expect(nextArg).toBe(next);
 
       const result = await fn();
       expect(mockedUserService.logout).toHaveBeenCalledWith(req, res);
       expect(result).toBe(true);
+      expect(opts?.transform?.(result)).toEqual({
+        success: true,
+      } satisfies SuccessResponse);
     });
   });
 });
