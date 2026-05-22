@@ -10,7 +10,9 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "devstart": "DEBUG=personal-express-ts-setup* npm run dev",
-    "generate:resource": "node scripts/generate-resource.js"
+    "generate:resource": "node scripts/generate-resource.js",
+    "openapi:generate": "ts-node src/openapi/generate.ts",
+    "openapi:check": "ts-node src/openapi/generate.ts --check"
   },
   "keywords": [],
   "author": "",
@@ -34,6 +36,7 @@
     "typescript": "^5.9.3"
   },
   "dependencies": {
+    "@asteasolutions/zod-to-openapi": "^8.5.0",
     "@node-rs/argon2": "^2.0.2",
     "@types/jsonwebtoken": "^9.0.10",
     "cookie-parser": "^1.4.7",
@@ -42,6 +45,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "mysql2": "^3.15.2",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.3.5"
   }
 }

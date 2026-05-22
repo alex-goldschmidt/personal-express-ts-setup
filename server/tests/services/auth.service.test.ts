@@ -86,8 +86,11 @@ describe("UserService", () => {
     } as UserDTO;
     mockedUserRepo.queryByUserId.mockResolvedValueOnce(fake as UserDTO);
 
-    const userInDb = await UserService.getSingleUserById(1);
-    expect(userInDb).toEqual(fake);
+    const user = await UserService.getSingleUserById(1);
+    expect(user).toEqual({
+      userId: 1,
+      email: "test@email.com",
+    });
     expect(mockedUserRepo.queryByUserId).toHaveBeenCalledWith(1);
   });
 

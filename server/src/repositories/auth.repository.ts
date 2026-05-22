@@ -6,7 +6,8 @@ import {
 } from "../config/db";
 import { AuthUserDTO } from "../dtos/projections/user.projection";
 import { UserDTO } from "../dtos/user.dto";
-import { CreateUserModel } from "../models/user.model";
+import { CreateUserRecord } from "../types/createUserRecord";
+
 export class UserRepository {
   static readonly tableName = "user";
 
@@ -28,7 +29,7 @@ export class UserRepository {
     );
   }
 
-  static async createUser(newUser: CreateUserModel): Promise<number> {
+  static async createUser(newUser: CreateUserRecord): Promise<number> {
     return await insertAsync(
       `INSERT INTO ${this.tableName} (email, password) 
       VALUES (?, ?)`,
