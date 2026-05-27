@@ -191,7 +191,10 @@ describe("auth.controller", () => {
       expect(opts).toEqual({ successStatus: HttpStatusCode.SUCCESS });
 
       const result = await fn();
-      expect(mockedUserService.refreshAccessToken).toHaveBeenCalledWith(req);
+      expect(mockedUserService.refreshAccessToken).toHaveBeenCalledWith(
+        req,
+        res
+      );
       expect(res.cookie).toHaveBeenCalledWith(
         "refreshToken",
         tokenPair.refreshToken,

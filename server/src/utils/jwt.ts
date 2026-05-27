@@ -18,6 +18,10 @@ export async function generateTokenPair(userId: number): Promise<TokenPair> {
   const payload: JwtPayload = {
     sub: userId.toString(),
   };
+  const refreshPayload: JwtPayload = {
+    sub: userId.toString(),
+    jti: crypto.randomUUID(),
+  };
 
   const accessToken = jwt.sign(
     payload,
@@ -29,7 +33,7 @@ export async function generateTokenPair(userId: number): Promise<TokenPair> {
   );
 
   const refreshToken = jwt.sign(
-    payload,
+    refreshPayload,
     process.env.JWT_REFRESH_TOKEN_SECRET as Secret,
     {
       expiresIn: "7d",
@@ -63,7 +67,7 @@ export async function generateAccessToken(userId: number): Promise<string> {
   return accessToken;
 }
 
-export async function verifyToken(token: string): Promise<JwtPayload> {
+export async function verifyRefreshToken(token: string): Promise<JwtPayload> {
   try {
     return jwt.verify(
       token,

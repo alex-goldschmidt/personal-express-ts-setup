@@ -10,11 +10,12 @@ export function authenticateToken<P = Record<string, string>>(
   next: NextFunction
 ): void {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader?.replace("Bearer ", "");
 
-  if (!token) {
-    throw new UnauthorizedError("Missing token");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return next(new UnauthorizedError("Missing token"));
   }
+
+  const token = authHeader.slice(7);
 
   try {
     const decoded = jwt.verify(
@@ -22,14 +23,14 @@ export function authenticateToken<P = Record<string, string>>(
       process.env.JWT_ACCESS_TOKEN_SECRET as Secret
     ) as JwtPayload;
     req.user = decoded;
-    next();
+    return next();
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
-      throw new ForbiddenError("Token expired");
+      return next(new ForbiddenError("Token expired"));
     }
     if (err instanceof jwt.JsonWebTokenError) {
-      throw new ForbiddenError("Invalid token");
+      return next(new ForbiddenError("Invalid token"));
     }
-    throw new ForbiddenError("Authentication failed");
+    return next(new ForbiddenError("Authentication failed"));
   }
 }

@@ -42,12 +42,31 @@ export class RefreshTokenRepository {
     );
   }
 
+  static async revokeActiveTokenByHash(
+    tokenHash: string,
+    userId: number
+  ): Promise<number> {
+    return await executeNonQueryAsync(
+      `UPDATE ${this.tableName} SET isRevoked = 1
+        WHERE tokenHash = ? AND userId = ? AND isRevoked = 0`,
+      [tokenHash, userId]
+    );
+  }
+
+  static async revokeAllActiveTokensForUser(userId: number): Promise<number> {
+    return await executeNonQueryAsync(
+      `UPDATE ${this.tableName} SET isRevoked = 1
+        WHERE userId = ? AND isRevoked = 0`,
+      [userId]
+    );
+  }
+
   static async queryByUserIdAndTokenHash(
     userId: number,
     tokenHash: string
   ): Promise<RevokedStatus | null> {
     return await queryFirstAsync<RevokedStatus>(
-      `SELECT isRevoked FROM ${this.tableName} WHERE userId = ? AND tokenHash = ?`,
+      `SELECT isRevoked, expiration FROM ${this.tableName} WHERE userId = ? AND tokenHash = ?`,
       [userId, tokenHash]
     );
   }

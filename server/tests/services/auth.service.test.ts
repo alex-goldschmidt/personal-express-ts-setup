@@ -13,7 +13,7 @@ import {
   generateTokenPair,
   handleRefreshToken,
   TokenPair,
-  verifyToken,
+  verifyRefreshToken,
 } from "../../src/utils/jwt";
 import { hashPassword } from "../../src/utils/password";
 import {
@@ -32,7 +32,7 @@ jest.mock("@node-rs/argon2", () => ({ verify: jest.fn() }));
 jest.mock("../../src/utils/jwt", () => ({
   generateTokenPair: jest.fn(),
   handleRefreshToken: jest.fn(),
-  verifyToken: jest.fn(),
+  verifyRefreshToken: jest.fn(),
   createTokenHash: jest.fn(),
   clearRefreshTokenCookie: jest.fn(),
 }));
@@ -51,8 +51,8 @@ const mockedGenerateTokenPair = generateTokenPair as jest.MockedFunction<
 const mockedHandleRefreshToken = handleRefreshToken as jest.MockedFunction<
   typeof handleRefreshToken
 >;
-const mockedVerifyToken = verifyToken as jest.MockedFunction<
-  typeof verifyToken
+const mockedVerifyRefreshToken = verifyRefreshToken as jest.MockedFunction<
+  typeof verifyRefreshToken
 >;
 const mockedCreateTokenHash = createTokenHash as jest.MockedFunction<
   typeof createTokenHash
@@ -130,17 +130,22 @@ describe("UserService", () => {
       );
     });
 
-    it("throws UnauthorizedError when email is not found", async () => {
+    it("throws generic UnauthorizedError and verifies a dummy hash when email is not found", async () => {
       mockedUserRepo.queryByEmail.mockResolvedValueOnce(null);
+      mockedVerify.mockResolvedValueOnce(false);
 
-      await expect(UserService.signIn(userInput)).rejects.toBeInstanceOf(
-        UnauthorizedError
+      await expect(UserService.signIn(userInput)).rejects.toMatchObject({
+        constructor: UnauthorizedError,
+        message: "Invalid email or password.",
+      });
+      expect(mockedVerify).toHaveBeenCalledWith(
+        expect.stringMatching(/^\$argon2id\$/),
+        userInput.password
       );
-      expect(mockedVerify).not.toHaveBeenCalled();
       expect(mockedGenerateTokenPair).not.toHaveBeenCalled();
     });
 
-    it("throws UnauthorizedError when password is incorrect", async () => {
+    it("throws generic UnauthorizedError when password is incorrect", async () => {
       mockedUserRepo.queryByEmail.mockResolvedValueOnce({
         userId: 2,
         email: userInput.email,
@@ -148,9 +153,10 @@ describe("UserService", () => {
       } as AuthUserDTO);
       mockedVerify.mockResolvedValueOnce(false);
 
-      await expect(UserService.signIn(userInput)).rejects.toBeInstanceOf(
-        UnauthorizedError
-      );
+      await expect(UserService.signIn(userInput)).rejects.toMatchObject({
+        constructor: UnauthorizedError,
+        message: "Invalid email or password.",
+      });
       expect(mockedGenerateTokenPair).not.toHaveBeenCalled();
     });
   });
@@ -160,28 +166,29 @@ describe("UserService", () => {
       const req = {
         cookies: { refreshToken: "oldToken" },
       } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
       const tokens: TokenPair = {
         accessToken: "newAccess",
         refreshToken: "newRefresh",
         refreshTokenExpiration: new Date("2026-01-22T22:11:35.000Z"),
       };
 
-      mockedVerifyToken.mockResolvedValueOnce({ sub: "10" } as JwtPayload);
+      mockedVerifyRefreshToken.mockResolvedValueOnce({ sub: "10" } as JwtPayload);
       mockedCreateTokenHash.mockResolvedValueOnce("oldHash");
       mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce({
         isRevoked: 0,
+        expiration: new Date(Date.now() + 60_000),
       } as RevokedStatus);
-      mockedRefreshRepo.updateTokenRevokedStatus.mockResolvedValueOnce(1);
+      mockedRefreshRepo.revokeActiveTokenByHash.mockResolvedValueOnce(1);
       mockedGenerateTokenPair.mockResolvedValueOnce(tokens);
 
-      const result = await UserService.refreshAccessToken(req);
+      const result = await UserService.refreshAccessToken(req, res);
 
       expect(result).toEqual(tokens);
-      expect(mockedVerifyToken).toHaveBeenCalledWith("oldToken");
+      expect(mockedVerifyRefreshToken).toHaveBeenCalledWith("oldToken");
       expect(mockedCreateTokenHash).toHaveBeenCalledWith("oldToken");
-      expect(mockedRefreshRepo.updateTokenRevokedStatus).toHaveBeenCalledWith(
+      expect(mockedRefreshRepo.revokeActiveTokenByHash).toHaveBeenCalledWith(
         "oldHash",
-        1,
         10
       );
       expect(mockedHandleRefreshToken).toHaveBeenCalledWith(
@@ -193,53 +200,89 @@ describe("UserService", () => {
 
     it("throws UnauthorizedError when refresh token cookie is missing", async () => {
       const req = { cookies: {} } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
-      await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(
+      await expect(UserService.refreshAccessToken(req, res)).rejects.toBeInstanceOf(
         UnauthorizedError
       );
-      expect(mockedVerifyToken).not.toHaveBeenCalled();
+      expect(mockedVerifyRefreshToken).not.toHaveBeenCalled();
     });
 
     it("throws UnauthorizedError when token is not stored", async () => {
       const req = {
         cookies: { refreshToken: "oldToken" },
       } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
-      mockedVerifyToken.mockResolvedValueOnce({ sub: "5" } as JwtPayload);
+      mockedVerifyRefreshToken.mockResolvedValueOnce({ sub: "5" } as JwtPayload);
       mockedCreateTokenHash.mockResolvedValueOnce("hash");
-      mockedRefreshRepo.updateTokenRevokedStatus.mockResolvedValueOnce(1);
       mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce(null);
 
-      await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(
+      await expect(UserService.refreshAccessToken(req, res)).rejects.toBeInstanceOf(
         UnauthorizedError
       );
     });
 
-    it("throws ForbiddenError when token has been revoked", async () => {
+    it("revokes all active tokens and clears cookie when token reuse is detected", async () => {
       const req = {
         cookies: { refreshToken: "oldToken" },
       } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
-      mockedVerifyToken.mockResolvedValueOnce({ sub: "3" } as JwtPayload);
+      mockedVerifyRefreshToken.mockResolvedValueOnce({ sub: "3" } as JwtPayload);
       mockedCreateTokenHash.mockResolvedValueOnce("hash");
       mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce({
-        isRevoked: 1,
+        isRevoked: 0,
+        expiration: new Date(Date.now() + 60_000),
       } as RevokedStatus);
+      mockedRefreshRepo.revokeActiveTokenByHash.mockResolvedValueOnce(0);
 
-      await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(
+      await expect(UserService.refreshAccessToken(req, res)).rejects.toBeInstanceOf(
         ForbiddenError
       );
-      expect(mockedRefreshRepo.updateTokenRevokedStatus).not.toHaveBeenCalled();
+      expect(mockedRefreshRepo.revokeAllActiveTokensForUser).toHaveBeenCalledWith(
+        3
+      );
+      expect(mockedClearRefreshTokenCookie).toHaveBeenCalledWith(res);
+      expect(mockedGenerateTokenPair).not.toHaveBeenCalled();
+    });
+
+    it("clears cookie and throws ForbiddenError when stored token is expired", async () => {
+      const req = {
+        cookies: { refreshToken: "oldToken" },
+      } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
+
+      mockedVerifyRefreshToken.mockResolvedValueOnce({ sub: "3" } as JwtPayload);
+      mockedCreateTokenHash.mockResolvedValueOnce("hash");
+      mockedRefreshRepo.queryByUserIdAndTokenHash.mockResolvedValueOnce({
+        isRevoked: 0,
+        expiration: new Date(Date.now() - 60_000),
+      } as RevokedStatus);
+
+      await expect(UserService.refreshAccessToken(req, res)).rejects.toBeInstanceOf(
+        ForbiddenError
+      );
+      expect(mockedRefreshRepo.updateTokenRevokedStatus).toHaveBeenCalledWith(
+        "hash",
+        1,
+        3
+      );
+      expect(mockedClearRefreshTokenCookie).toHaveBeenCalledWith(res);
+      expect(mockedRefreshRepo.revokeActiveTokenByHash).not.toHaveBeenCalled();
     });
 
     it("throws UnauthorizedError when token subject is invalid", async () => {
       const req = {
         cookies: { refreshToken: "token" },
       } as unknown as Request;
+      const res = { clearCookie: jest.fn() } as unknown as Response;
 
-      mockedVerifyToken.mockResolvedValueOnce({ sub: undefined } as JwtPayload);
+      mockedVerifyRefreshToken.mockResolvedValueOnce({
+        sub: undefined,
+      } as JwtPayload);
 
-      await expect(UserService.refreshAccessToken(req)).rejects.toBeInstanceOf(
+      await expect(UserService.refreshAccessToken(req, res)).rejects.toBeInstanceOf(
         UnauthorizedError
       );
     });
