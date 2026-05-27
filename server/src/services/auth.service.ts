@@ -18,12 +18,20 @@ import {
   generateTokenPair,
   handleRefreshToken,
   TokenPair,
-  verifyToken,
+  verifyRefreshToken,
 } from "../utils/jwt";
 import dotenv from "dotenv";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 dotenv.config();
 import { Response } from "express";
+
+const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
+const DUMMY_PASSWORD_HASH =
+  "$argon2id$v=19$m=19456,t=2,p=1$taWh6nrERdcm9BHI2lZJwQ$ed0QBVeqDFJZo6SmyoIh7/LTYd2JNc1E4ognqo4WoTk";
+
+function isExpired(expiration: string | Date): boolean {
+  return new Date(expiration).getTime() <= Date.now();
+}
 
 export class UserService {
   static async getSingleUserById(userId: number): Promise<User | null> {
@@ -36,19 +44,13 @@ export class UserService {
     const validatedUser = validateWithZod(UserInputSchema, userInput);
     const existingUser = await UserRepository.queryByEmail(validatedUser.email);
 
-    if (!existingUser) {
-      throw new UnauthorizedError(
-        "No user with this email exists. Please sign up."
-      );
-    }
-
     const isPasswordValid = await verify(
-      existingUser.password,
+      existingUser?.password ?? DUMMY_PASSWORD_HASH,
       validatedUser.password
     );
 
-    if (!isPasswordValid) {
-      throw new UnauthorizedError("Incorrect password. Please try again.");
+    if (!existingUser || !isPasswordValid) {
+      throw new UnauthorizedError(INVALID_CREDENTIALS_MESSAGE);
     }
 
     const tokenPair = await generateTokenPair(existingUser.userId);
@@ -62,14 +64,17 @@ export class UserService {
     return tokenPair;
   }
 
-  static async refreshAccessToken(req: Request): Promise<TokenPair> {
+  static async refreshAccessToken(
+    req: Request,
+    res: Response
+  ): Promise<TokenPair> {
     const oldRefreshToken = req.cookies?.["refreshToken"] as string;
 
     if (!oldRefreshToken) {
       throw new UnauthorizedError("Missing Token");
     }
 
-    const decoded = await verifyToken(oldRefreshToken);
+    const decoded = await verifyRefreshToken(oldRefreshToken);
 
     const userId = parseInt(decoded.sub!);
 
@@ -88,15 +93,26 @@ export class UserService {
       throw new UnauthorizedError("Invalid Token");
     }
 
-    if (refreshTokenInDb.isRevoked === 1) {
-      throw new ForbiddenError("Token was revoked");
+    if (isExpired(refreshTokenInDb.expiration)) {
+      await RefreshTokenRepository.updateTokenRevokedStatus(
+        oldRefreshTokenHash,
+        1,
+        userId
+      );
+      await clearRefreshTokenCookie(res);
+      throw new ForbiddenError("Token expired");
     }
 
-    await RefreshTokenRepository.updateTokenRevokedStatus(
+    const revokedRows = await RefreshTokenRepository.revokeActiveTokenByHash(
       oldRefreshTokenHash,
-      1,
       userId
     );
+
+    if (revokedRows === 0) {
+      await RefreshTokenRepository.revokeAllActiveTokensForUser(userId);
+      await clearRefreshTokenCookie(res);
+      throw new ForbiddenError("Refresh token reuse detected");
+    }
 
     const newTokenPair = await generateTokenPair(userId);
 

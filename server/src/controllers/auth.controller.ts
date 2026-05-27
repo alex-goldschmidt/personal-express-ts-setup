@@ -108,7 +108,7 @@ export const refreshToken: RequestHandler<{}, AuthTokenResponse> = async (
 ) => {
   return executeSafely(
     async () => {
-      const tokenPair = await UserService.refreshAccessToken(req);
+      const tokenPair = await UserService.refreshAccessToken(req, res);
       await setRefreshTokenCookie(
         res,
         tokenPair.refreshToken,

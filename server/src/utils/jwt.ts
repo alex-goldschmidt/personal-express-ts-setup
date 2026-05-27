@@ -63,7 +63,7 @@ export async function generateAccessToken(userId: number): Promise<string> {
   return accessToken;
 }
 
-export async function verifyToken(token: string): Promise<JwtPayload> {
+export async function verifyRefreshToken(token: string): Promise<JwtPayload> {
   try {
     return jwt.verify(
       token,
