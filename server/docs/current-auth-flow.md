@@ -14,6 +14,11 @@ The app uses a custom email/password authentication system:
 
 The current route prefix is `/api/users`.
 
+`GET /api/users/me` verifies the bearer token and returns the public user model
+for its validated subject. Missing user records return 404, including on the
+existing ID route. The Vite/React starter uses `/me` for its profile query; local
+HTTPS and the `/api` proxy preserve secure refresh-cookie behavior.
+
 ## Routes
 
 ### `POST /api/users/register`
@@ -141,8 +146,8 @@ Middleware:
 Flow:
 
 1. `authenticateToken` requires an `Authorization: Bearer <token>` header.
-2. It verifies the access JWT with `JWT_ACCESS_TOKEN_SECRET`.
-3. It stores the decoded JWT payload on `req.user`.
+2. It verifies the access JWT with a required `JWT_ACCESS_TOKEN_SECRET` and the `HS256` algorithm.
+3. It validates the decoded claims before storing them on `req.user`; `sub` must be a canonical positive safe integer string.
 4. `authorizeUserId` compares `req.user.sub` with the `:userId` route parameter.
 5. If they match, the user record is returned.
 
@@ -150,6 +155,8 @@ Security notes:
 
 - `authenticateToken` uses strict `Bearer ` parsing.
 - Middleware forwards failures through `next(err)` so the central error middleware formats responses.
+- Route IDs must also be canonical positive safe integer strings; partial numeric strings are rejected.
+- Non-string refresh cookies are treated as missing tokens on refresh and cleared on logout.
 
 ## Token Design
 
@@ -281,4 +288,7 @@ Remaining items to address before production:
 
 ## Clerk Migration Note
 
-`@clerk/express` is installed in the project, but the active routes shown above still use the custom auth flow. If Clerk becomes the production auth provider, sign-in/sign-up/session management should move to Clerk and this API should shift toward verifying Clerk sessions and enforcing app-specific authorization.
+This project does not currently depend on Clerk; its sibling `findep` does.
+See [the data-flow comparison](data-flow-and-findep-comparison.md) for that
+provider boundary. A future Clerk migration can retain the current
+middleware → controller → service → repository architecture.

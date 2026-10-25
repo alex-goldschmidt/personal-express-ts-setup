@@ -8,10 +8,25 @@ import { User } from "../models/user.model";
 import { HttpStatusCode } from "../constants/constants";
 import { RequestHandler } from "express";
 import { setRefreshTokenCookie } from "../utils/jwt";
+import { UnauthorizedError } from "../config/exceptions";
 
 export interface UserParams {
   userId: string;
 }
+
+export const getCurrentUser: RequestHandler<{}, User> = async (req, res, next) => {
+  return executeSafely(
+    async () => {
+      if (!req.user) {
+        throw new UnauthorizedError("Missing user identity");
+      }
+      return UserService.getSingleUserById(Number(req.user.sub));
+    },
+    res,
+    next,
+    { onEmpty: { status: HttpStatusCode.NOT_FOUND, message: "User not found" } }
+  );
+};
 
 /**
  * POST /api/users/register
@@ -53,7 +68,8 @@ export const getUserById: RequestHandler<UserParams, User> = async (
     async () =>
       await UserService.getSingleUserById(parseInt(req.params.userId)),
     res,
-    next
+    next,
+    { onEmpty: { status: HttpStatusCode.NOT_FOUND, message: "User not found" } }
   );
 };
 

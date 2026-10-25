@@ -1,28 +1,4 @@
-import { ICacheClient, CacheService } from "../../src/cache";
-
-class InMemoryCacheClient implements ICacheClient {
-  private readonly store = new Map<string, unknown>();
-
-  async get<T>(key: string): Promise<T | null> {
-    return (this.store.get(key) as T | undefined) ?? null;
-  }
-
-  async set<T>(key: string, value: T): Promise<void> {
-    this.store.set(key, value);
-  }
-
-  async delete(key: string): Promise<void> {
-    this.store.delete(key);
-  }
-
-  async deleteMany(keys: string[]): Promise<void> {
-    keys.forEach((key) => this.store.delete(key));
-  }
-
-  async clear(): Promise<void> {
-    this.store.clear();
-  }
-}
+import { CacheService, NoopCacheClient } from "../../src/cache";
 
 describe("CacheService", () => {
   beforeEach(() => {
@@ -31,6 +7,7 @@ describe("CacheService", () => {
 
   afterEach(() => {
     CacheService.reset();
+    jest.restoreAllMocks();
   });
 
   it("returns null by default when no cache client is configured", async () => {
@@ -40,17 +17,27 @@ describe("CacheService", () => {
   });
 
   it("uses the configured cache client", async () => {
-    CacheService.configure(new InMemoryCacheClient());
+    const client = new NoopCacheClient();
+    const get = jest.spyOn(client, "get").mockResolvedValueOnce({ itemId: 1 });
+    const set = jest.spyOn(client, "set");
+    CacheService.configure(client);
 
     await CacheService.set("items:1", { itemId: 1 });
 
     const result = await CacheService.get<{ itemId: number }>("items:1");
 
     expect(result).toEqual({ itemId: 1 });
+    expect(get).toHaveBeenCalledWith("items:1");
+    expect(set).toHaveBeenCalledWith("items:1", { itemId: 1 }, undefined);
   });
 
   it("loads and caches a missing value", async () => {
-    CacheService.configure(new InMemoryCacheClient());
+    const client = new NoopCacheClient();
+    jest.spyOn(client, "get")
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(["cached result"]);
+    const set = jest.spyOn(client, "set");
+    CacheService.configure(client);
     const loader = jest.fn(async () => ["cached result"]);
 
     const firstResult = await CacheService.getOrSet("items:all", loader);
@@ -59,5 +46,7 @@ describe("CacheService", () => {
     expect(firstResult).toEqual(["cached result"]);
     expect(secondResult).toEqual(["cached result"]);
     expect(loader).toHaveBeenCalledTimes(1);
+    expect(set).toHaveBeenCalledTimes(1);
+    expect(set).toHaveBeenCalledWith("items:all", ["cached result"], undefined);
   });
 });

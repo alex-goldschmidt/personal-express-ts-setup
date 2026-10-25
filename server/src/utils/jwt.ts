@@ -1,9 +1,11 @@
-import jwt, { JwtPayload, Secret } from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { ForbiddenError } from "../config/exceptions";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
 import { Response } from "express";
+import { getRequiredEnv, JwtSecretEnv } from "../config/env";
+import { parseTokenClaims, TokenClaims } from "./authClaims";
 dotenv.config();
 
 export interface TokenPair {
@@ -25,7 +27,7 @@ export async function generateTokenPair(userId: number): Promise<TokenPair> {
 
   const accessToken = jwt.sign(
     payload,
-    process.env.JWT_ACCESS_TOKEN_SECRET as Secret,
+    getRequiredEnv(JwtSecretEnv.AccessToken),
     {
       expiresIn: "15m",
       algorithm: "HS256",
@@ -34,7 +36,7 @@ export async function generateTokenPair(userId: number): Promise<TokenPair> {
 
   const refreshToken = jwt.sign(
     refreshPayload,
-    process.env.JWT_REFRESH_TOKEN_SECRET as Secret,
+    getRequiredEnv(JwtSecretEnv.RefreshToken),
     {
       expiresIn: "7d",
       algorithm: "HS256",
@@ -57,7 +59,7 @@ export async function generateAccessToken(userId: number): Promise<string> {
 
   const accessToken = jwt.sign(
     payload,
-    process.env.JWT_ACCESS_TOKEN_SECRET as Secret,
+    getRequiredEnv(JwtSecretEnv.AccessToken),
     {
       expiresIn: "15m",
       algorithm: "HS256",
@@ -67,12 +69,11 @@ export async function generateAccessToken(userId: number): Promise<string> {
   return accessToken;
 }
 
-export async function verifyRefreshToken(token: string): Promise<JwtPayload> {
+export async function verifyRefreshToken(token: string): Promise<TokenClaims> {
+  const secret = getRequiredEnv(JwtSecretEnv.RefreshToken);
   try {
-    return jwt.verify(
-      token,
-      process.env.JWT_REFRESH_TOKEN_SECRET as Secret
-    ) as JwtPayload;
+    const verifiedPayload = jwt.verify(token, secret, { algorithms: ["HS256"] });
+    return parseTokenClaims(verifiedPayload);
   } catch (err) {
     if (err instanceof jwt.TokenExpiredError) {
       throw new ForbiddenError("Token expired");

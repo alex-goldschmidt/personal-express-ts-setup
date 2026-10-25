@@ -8,6 +8,7 @@ import { AuthTokenResponseSchema } from "../models/auth.model";
 import { ErrorResponseSchema, SuccessResponseSchema } from "../models/common.model";
 import { UserSchema } from "../models/user.model";
 import { UserInputSchema } from "../models/userCreateInput.model";
+import { UserIdStringSchema } from "../utils/authClaims";
 
 const jsonContent = <T extends z.ZodType>(schema: T) => ({
   "application/json": { schema },
@@ -36,10 +37,12 @@ export function createOpenApiDocument() {
   registry.registerPath({
     method: "post",
     path: "/api/users/register",
+    operationId: "registerUser",
     tags: ["Users"],
     summary: "Register a user",
     request: {
       body: {
+        required: true,
         description: "User registration payload",
         content: jsonContent(UserInputSchema),
       },
@@ -57,10 +60,12 @@ export function createOpenApiDocument() {
   registry.registerPath({
     method: "post",
     path: "/api/users/signIn",
+    operationId: "signIn",
     tags: ["Users"],
     summary: "Sign in a user",
     request: {
       body: {
+        required: true,
         description: "User sign-in credentials",
         content: jsonContent(UserInputSchema),
       },
@@ -78,6 +83,7 @@ export function createOpenApiDocument() {
   registry.registerPath({
     method: "post",
     path: "/api/users/refreshToken",
+    operationId: "refreshAccessToken",
     tags: ["Users"],
     summary: "Refresh the access token",
     security: [{ refreshTokenCookie: [] }],
@@ -94,6 +100,7 @@ export function createOpenApiDocument() {
   registry.registerPath({
     method: "post",
     path: "/api/users/logout",
+    operationId: "logout",
     tags: ["Users"],
     summary: "Log out a user",
     security: [{ refreshTokenCookie: [] }],
@@ -107,19 +114,38 @@ export function createOpenApiDocument() {
 
   registry.registerPath({
     method: "get",
+    path: "/api/users/me",
+    operationId: "getCurrentUser",
+    tags: ["Users"],
+    summary: "Get the authenticated user",
+    security: [{ bearerAuth: [] }],
+    responses: {
+      [HttpStatusCode.SUCCESS]: {
+        description: "Public profile of the authenticated user",
+        content: jsonContent(UserSchema),
+      },
+      [HttpStatusCode.UNAUTHORIZED]: errorResponse("Missing token"),
+      [HttpStatusCode.FORBIDDEN]: errorResponse("Invalid or expired token"),
+      [HttpStatusCode.NOT_FOUND]: errorResponse("User was not found"),
+    },
+  });
+
+  registry.registerPath({
+    method: "get",
     path: "/api/users/{userId}",
+    operationId: "getUserById",
     tags: ["Users"],
     summary: "Get a user by id",
     security: [{ bearerAuth: [] }],
     request: {
       params: z.object({
-        userId: z.string().openapi({
+        userId: UserIdStringSchema.openapi({
           example: "1",
           param: {
             name: "userId",
             in: "path",
             required: true,
-            description: "User identifier",
+            description: "Canonical positive safe-integer user identifier",
           },
         }),
       }),

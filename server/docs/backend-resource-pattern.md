@@ -2,6 +2,9 @@
 
 This backend currently follows a layered resource pattern, even when people refer to it as a `route/controller/service` stack.
 
+See [the data-flow walkthrough and findep comparison](data-flow-and-findep-comparison.md)
+for concrete requests and [the type-safety policy](type-safety.md) for required checks.
+
 For each new table-backed resource, generate the DB-backed DTO from the table schema:
 
 - `src/dtos/<resource>.dto.ts`
@@ -26,7 +29,7 @@ Follow the naming and endpoint examples below when adding a resource.
 ### Controller
 
 - Reads `params`, `body`, and `query`.
-- Builds DTO-shaped input objects.
+- Validates request input with public Zod models and passes typed input to services.
 - Calls service methods.
 - Returns responses through `executeSafely`.
 
@@ -34,7 +37,8 @@ Follow the naming and endpoint examples below when adding a resource.
 
 - Holds resource-level business logic.
 - Calls the repository layer.
-- Returns DTOs or counts/inserted IDs.
+- Returns public models for API-facing results, or counts/inserted IDs for mutations.
+- Uses mappers to keep internal DTO fields out of public responses.
 
 ### Repository
 
@@ -115,12 +119,17 @@ Flags:
 - `--from-db`: read table columns from the MySQL database configured in `.env`
 - `--force`: overwrite generated files if they already exist
 - `--dry-run`: print what would be created without writing files
+- `--check`: compare generated content with the existing DTO, without writing or building
 
 The old layer scaffold flags `--service`, `--controller`, `--route`, `--route-path`, and `--full` are intentionally unsupported. Add repositories and API layers separately so persistence behavior does not get overwritten when DTOs are regenerated from the database.
 
 When `--from-db` is used, the generator reads `INFORMATION_SCHEMA.COLUMNS` using the app's `MYSQLHOST`, `MYSQLUSER`, `MYSQLPASSWORD`, and `MYSQLDATABASE` env vars. It uses the detected columns to generate DTO fields.
 
 Rerunning `--from-db` updates the generated DTO from the current table schema.
+Output is deterministic: regeneration no longer inserts a timestamp.
+`--dry-run` prints full proposed contents; `--check` requires DB access when
+combined with `--from-db`. See [the codegen walkthrough](codegen-and-findep-comparison.md)
+for driver type mappings and the separate Hey API generation path.
 
 Use `--force` when you intentionally want to overwrite an existing DTO.
 

@@ -1,8 +1,19 @@
-import jwt, { JwtPayload, Secret } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { ForbiddenError, UnauthorizedError } from "../config/exceptions";
 import { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
+import { getRequiredEnv, JwtSecretEnv } from "../config/env";
+import { parseTokenClaims } from "../utils/authClaims";
 dotenv.config();
+
+function getAccessTokenSecret(next: NextFunction): string | undefined {
+  try {
+    return getRequiredEnv(JwtSecretEnv.AccessToken);
+  } catch (err) {
+    next(err);
+    return undefined;
+  }
+}
 
 export function authenticateToken<P = Record<string, string>>(
   req: Request<P>,
@@ -17,11 +28,14 @@ export function authenticateToken<P = Record<string, string>>(
 
   const token = authHeader.slice(7);
 
+  const secret = getAccessTokenSecret(next);
+  if (secret === undefined) {
+    return;
+  }
+
   try {
-    const decoded = jwt.verify(
-      token,
-      process.env.JWT_ACCESS_TOKEN_SECRET as Secret
-    ) as JwtPayload;
+    const verifiedPayload = jwt.verify(token, secret, { algorithms: ["HS256"] });
+    const decoded = parseTokenClaims(verifiedPayload);
     req.user = decoded;
     return next();
   } catch (err) {

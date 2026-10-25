@@ -1,8 +1,11 @@
-import { Request, Response, NextFunction } from "express";
+import { createRequest } from "node-mocks-http";
+import { createResponse } from "../helpers/http";
+import { Request } from "express";
 import { HttpStatusCode } from "../../src/constants/constants";
 import {
   signUp,
   getUserById,
+  getCurrentUser,
   signIn,
   refreshToken,
   logout,
@@ -11,11 +14,10 @@ import {
 import { UserService } from "../../src/services/auth.service";
 import executeSafely from "../../src/utils/executeSafely";
 import { TokenPair } from "../../src/utils/jwt";
-import { UserInput } from "../../src/models/userCreateInput.model";
 import { SuccessResponse } from "../../src/models/common.model";
 import { AuthTokenResponse } from "../../src/models/auth.model";
 import { User } from "../../src/models/user.model";
-import { ValidationError } from "../../src/config/exceptions";
+import { ValidationError, UnauthorizedError } from "../../src/config/exceptions";
 
 jest.mock("../../src/services/auth.service", () => ({
   UserService: {
@@ -32,23 +34,40 @@ jest.mock("../../src/utils/executeSafely", () => ({
   default: jest.fn(),
 }));
 
-const mockedExecuteSafely = executeSafely as jest.MockedFunction<
-  typeof executeSafely
->;
-const mockedUserService = UserService as jest.Mocked<typeof UserService>;
+const mockedExecuteSafely = jest.mocked(executeSafely);
+const mockedUserService = jest.mocked(UserService);
 
 describe("auth.controller", () => {
   afterEach(() => {
     jest.resetAllMocks();
   });
 
+  describe("getCurrentUser", () => {
+    it("uses the authenticated identity rather than client-supplied IDs", async () => {
+      const req = createRequest({ user: { sub: "7" }, query: { userId: "99" } });
+      mockedUserService.getSingleUserById.mockResolvedValueOnce({ userId: 7, email: "me@example.com" });
+      await getCurrentUser(req, createResponse(), jest.fn());
+      const [fn, , , options] = mockedExecuteSafely.mock.calls[0];
+      await expect(fn()).resolves.toEqual({ userId: 7, email: "me@example.com" });
+      expect(mockedUserService.getSingleUserById).toHaveBeenCalledWith(7);
+      expect(options?.onEmpty).toEqual({ status: 404, message: "User not found" });
+    });
+
+    it("rejects a request without an authenticated identity", async () => {
+      await getCurrentUser(createRequest(), createResponse(), jest.fn());
+      const [fn] = mockedExecuteSafely.mock.calls[0];
+      await expect(fn()).rejects.toBeInstanceOf(UnauthorizedError);
+      expect(mockedUserService.getSingleUserById).not.toHaveBeenCalled();
+    });
+  });
+
   describe("signUp", () => {
     it("passes createUser to executeSafely with expected options", async () => {
-      const req = {
+      const req = createRequest({
         body: { email: "new@example.com", password: "Password123" },
-      } as Partial<Request> as Request;
-      const res = {} as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      });
+      const res = createResponse();
+      const next = jest.fn();
       mockedUserService.createUser.mockResolvedValueOnce(true);
 
       await signUp(req, res, next);
@@ -69,7 +88,7 @@ describe("auth.controller", () => {
 
       const result = await fn();
       expect(mockedUserService.createUser).toHaveBeenCalledWith(
-        req.body as UserInput
+        req.body
       );
       expect(result).toBe(true);
       expect(opts?.transform?.(result)).toEqual({
@@ -80,9 +99,9 @@ describe("auth.controller", () => {
 
   describe("getUserById", () => {
     it("delegates to UserService.getSingleUserById via executeSafely", async () => {
-      const req = { params: { userId: "5" } } as unknown as Request<UserParams>;
-      const res = {} as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      const req = createRequest<Request<UserParams>>({ params: { userId: "5" } });
+      const res = createResponse();
+      const next = jest.fn();
       const user = {
         userId: 5,
         email: "a@b.com",
@@ -92,7 +111,8 @@ describe("auth.controller", () => {
       await getUserById(req, res, next);
 
       expect(mockedExecuteSafely).toHaveBeenCalledTimes(1);
-      const [fn, resArg, nextArg] = mockedExecuteSafely.mock.calls[0];
+      const [fn, resArg, nextArg, options] = mockedExecuteSafely.mock.calls[0];
+      expect(options?.onEmpty).toEqual({ status: 404, message: "User not found" });
       expect(resArg).toBe(res);
       expect(nextArg).toBe(next);
 
@@ -104,11 +124,11 @@ describe("auth.controller", () => {
 
   describe("signIn", () => {
     it("validates request body before calling executeSafely", async () => {
-      const req = {
+      const req = createRequest({
         body: { email: "not-an-email", password: "short" },
-      } as Partial<Request> as Request;
-      const res = { cookie: jest.fn() } as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      });
+      const res = createResponse();
+      const next = jest.fn();
 
       await expect(signIn(req, res, next)).rejects.toBeInstanceOf(
         ValidationError
@@ -118,11 +138,11 @@ describe("auth.controller", () => {
     });
 
     it("sets refresh cookie and returns access token", async () => {
-      const req = {
+      const req = createRequest({
         body: { email: "john@example.com", password: "Password123" },
-      } as Partial<Request> as Request;
-      const res = { cookie: jest.fn() } as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      });
+      const res = createResponse();
+      const next = jest.fn();
       const tokenPair: TokenPair = {
         accessToken: "access",
         refreshToken: "refresh",
@@ -147,7 +167,7 @@ describe("auth.controller", () => {
       const result = await fn();
 
       expect(mockedUserService.signIn).toHaveBeenCalledWith(
-        req.body as UserInput
+        req.body
       );
       expect(res.cookie).toHaveBeenCalledWith(
         "refreshToken",
@@ -159,9 +179,7 @@ describe("auth.controller", () => {
           maxAge: expect.any(Number),
         })
       );
-      expect((res.cookie as jest.Mock).mock.calls[0][2].maxAge).toBeGreaterThan(
-        0
-      );
+      expect(res.cookies.refreshToken.options?.maxAge).toBeGreaterThan(0);
       expect(result).toEqual({
         accessToken: tokenPair.accessToken,
       } satisfies AuthTokenResponse);
@@ -170,11 +188,11 @@ describe("auth.controller", () => {
 
   describe("refreshToken", () => {
     it("returns access token from service", async () => {
-      const req = {
+      const req = createRequest({
         cookies: { refreshToken: "old" },
-      } as Partial<Request> as Request;
-      const res = { cookie: jest.fn() } as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      });
+      const res = createResponse();
+      const next = jest.fn();
       const tokenPair: TokenPair = {
         accessToken: "newAccess",
         refreshToken: "newRefresh",
@@ -210,11 +228,11 @@ describe("auth.controller", () => {
 
   describe("logout", () => {
     it("passes logout call through executeSafely", async () => {
-      const req = {
+      const req = createRequest({
         cookies: { refreshToken: "oldToken" },
-      } as Partial<Request> as Request;
-      const res = { clearCookie: jest.fn() } as Partial<Response> as Response;
-      const next = jest.fn() as NextFunction;
+      });
+      const res = createResponse();
+      const next = jest.fn();
 
       mockedUserService.logout.mockResolvedValueOnce(true);
 

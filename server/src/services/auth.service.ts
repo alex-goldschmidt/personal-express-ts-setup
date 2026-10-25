@@ -11,7 +11,7 @@ import { UserInput, UserInputSchema } from "../models/userCreateInput.model";
 import { CreateUserRecord } from "../types/createUserRecord";
 import { User } from "../models/user.model";
 import { verify } from "@node-rs/argon2";
-import { Request } from "express";
+import { Request, Response } from "express";
 import {
   clearRefreshTokenCookie,
   createTokenHash,
@@ -22,8 +22,18 @@ import {
 } from "../utils/jwt";
 import dotenv from "dotenv";
 import { RefreshTokenRepository } from "../repositories/refreshToken.repository";
+import { z } from "zod";
+import { UserIdStringSchema } from "../utils/authClaims";
 dotenv.config();
-import { Response } from "express";
+
+const RefreshTokenCookieSchema = z.object({
+  refreshToken: z.string().min(1),
+});
+
+function readRefreshToken(cookies: unknown): string | undefined {
+  const result = RefreshTokenCookieSchema.safeParse(cookies);
+  return result.success ? result.data.refreshToken : undefined;
+}
 
 const INVALID_CREDENTIALS_MESSAGE = "Invalid email or password.";
 const DUMMY_PASSWORD_HASH =
@@ -68,7 +78,7 @@ export class UserService {
     req: Request,
     res: Response
   ): Promise<TokenPair> {
-    const oldRefreshToken = req.cookies?.["refreshToken"] as string;
+    const oldRefreshToken = readRefreshToken(req.cookies);
 
     if (!oldRefreshToken) {
       throw new UnauthorizedError("Missing Token");
@@ -76,11 +86,11 @@ export class UserService {
 
     const decoded = await verifyRefreshToken(oldRefreshToken);
 
-    const userId = parseInt(decoded.sub!);
-
-    if (!userId || userId < 0) {
+    const subject = UserIdStringSchema.safeParse(decoded.sub);
+    if (!subject.success) {
       throw new UnauthorizedError("Invalid user identifier in token");
     }
+    const userId = Number(subject.data);
 
     const oldRefreshTokenHash = await createTokenHash(oldRefreshToken);
     const refreshTokenInDb =
@@ -126,7 +136,7 @@ export class UserService {
   }
 
   static async logout(req: Request, res: Response): Promise<boolean> {
-    const oldRefreshToken = req.cookies?.["refreshToken"] as string;
+    const oldRefreshToken = readRefreshToken(req.cookies);
 
     if (!oldRefreshToken) {
       await clearRefreshTokenCookie(res);

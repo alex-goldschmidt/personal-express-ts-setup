@@ -134,11 +134,13 @@
   "paths": {
     "/api/users/register": {
       "post": {
+        "operationId": "registerUser",
         "tags": [
           "Users"
         ],
         "summary": "Register a user",
         "requestBody": {
+          "required": true,
           "description": "User registration payload",
           "content": {
             "application/json": {
@@ -184,11 +186,13 @@
     },
     "/api/users/signIn": {
       "post": {
+        "operationId": "signIn",
         "tags": [
           "Users"
         ],
         "summary": "Sign in a user",
         "requestBody": {
+          "required": true,
           "description": "User sign-in credentials",
           "content": {
             "application/json": {
@@ -234,6 +238,7 @@
     },
     "/api/users/refreshToken": {
       "post": {
+        "operationId": "refreshAccessToken",
         "tags": [
           "Users"
         ],
@@ -279,6 +284,7 @@
     },
     "/api/users/logout": {
       "post": {
+        "operationId": "logout",
         "tags": [
           "Users"
         ],
@@ -302,8 +308,65 @@
         }
       }
     },
+    "/api/users/me": {
+      "get": {
+        "operationId": "getCurrentUser",
+        "tags": [
+          "Users"
+        ],
+        "summary": "Get the authenticated user",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile of the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Invalid or expired token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "User was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/users/{userId}": {
       "get": {
+        "operationId": "getUserById",
         "tags": [
           "Users"
         ],
@@ -317,12 +380,13 @@
           {
             "schema": {
               "type": "string",
+              "pattern": "^[1-9]\\d*$",
               "example": "1"
             },
             "required": true,
             "name": "userId",
             "in": "path",
-            "description": "User identifier"
+            "description": "Canonical positive safe-integer user identifier"
           }
         ],
         "responses": {

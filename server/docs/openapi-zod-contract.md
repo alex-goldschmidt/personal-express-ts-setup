@@ -8,7 +8,7 @@ This backend now uses public Zod models as the source of truth for client-facing
 - Database DTOs can contain internal fields, such as `UserDTO.password`, so they should not be returned directly.
 - Public models in `src/models` describe only API-safe shapes.
 - Mappers in `src/mappers` convert internal DTOs/projections into public models.
-- Hey API can later consume `openapi.json` to generate React frontend types from the backend contract.
+- Hey API consumes `openapi.json` to generate the React frontend's SDK, types, and TanStack Query helpers.
 
 ## Important Files
 
@@ -28,6 +28,13 @@ This backend now uses public Zod models as the source of truth for client-facing
 - Services perform business logic and return public models when the value is going directly to an API response.
 - Controllers validate client input, set HTTP-specific behavior such as cookies/status codes, and return service results through `executeSafely`.
 - OpenAPI schemas should reference public models, not DTOs.
+- Give each endpoint a stable unique `operationId`; it determines generated SDK and query-helper names.
+- Mark required request bodies explicitly.
+
+Run `npm run api:generate` at the repository root to export OpenAPI and generate
+the frontend SDK. Run `npm run api:check` to detect stale contracts or client
+output without updating them. See [the full codegen workflow and findep
+comparison](codegen-and-findep-comparison.md).
 
 ## Response Shape Notes
 

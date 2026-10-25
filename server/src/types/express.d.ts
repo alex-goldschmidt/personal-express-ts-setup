@@ -1,14 +1,11 @@
-import { JwtPayload } from "jsonwebtoken";
+import { TokenClaims } from "../utils/authClaims";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: string | JwtPayload | undefined;
-      cookies?: {
-        refreshToken?: string;
-      };
+      user?: TokenClaims;
     }
   }
 }
 
-export { ExpressRequest };
+export {};

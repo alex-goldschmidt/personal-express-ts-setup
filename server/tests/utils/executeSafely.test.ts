@@ -1,16 +1,12 @@
-import { Response, NextFunction } from "express";
+import { createResponse } from "../helpers/http";
 import executeSafely, { ExecutorOptions } from "../../src/utils/executeSafely";
 
 describe("executeSafely", () => {
-  let mockRes: Partial<Response>;
+  let mockRes: ReturnType<typeof createResponse>;
   let mockNext: jest.Mock;
 
   beforeEach(() => {
-    mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      type: jest.fn().mockReturnThis(),
-    };
+    mockRes = createResponse();
     mockNext = jest.fn();
   });
 
@@ -23,7 +19,7 @@ describe("executeSafely", () => {
       const data = { id: 1, name: "Test Item" };
       const fn = jest.fn().mockResolvedValueOnce(data);
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(data);
@@ -35,7 +31,7 @@ describe("executeSafely", () => {
       const fn = jest.fn().mockResolvedValueOnce(data);
       const opts: ExecutorOptions = { successStatus: 201 };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith(data);
@@ -48,7 +44,7 @@ describe("executeSafely", () => {
       ];
       const fn = jest.fn().mockResolvedValueOnce(data);
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(data);
@@ -59,7 +55,7 @@ describe("executeSafely", () => {
       const fn = jest.fn().mockResolvedValueOnce(data);
       const opts: ExecutorOptions = { contentType: "application/json" };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.type).toHaveBeenCalledWith("application/json");
       expect(mockRes.json).toHaveBeenCalledWith(data);
@@ -73,7 +69,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Not found" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({ message: "Not found" });
@@ -86,7 +82,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Item not found" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({
@@ -100,7 +96,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "No items found" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(404);
       expect(mockRes.json).toHaveBeenCalledWith({
@@ -112,7 +108,7 @@ describe("executeSafely", () => {
       const fn = jest.fn().mockResolvedValueOnce(null);
       const opts: ExecutorOptions = { onEmpty: { status: 404 } };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.json).toHaveBeenCalledWith({ message: "Not found" });
     });
@@ -121,7 +117,7 @@ describe("executeSafely", () => {
       const fn = jest.fn().mockResolvedValueOnce(null);
       const opts: ExecutorOptions = { onEmpty: null };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(null);
@@ -134,7 +130,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Empty" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(data);
@@ -145,11 +141,11 @@ describe("executeSafely", () => {
     it("should apply transform to reshape object", async () => {
       const data = { id: 1, name: "Test", secret: "hidden", internal: "field" };
       const fn = jest.fn().mockResolvedValueOnce(data);
-      const opts: ExecutorOptions = {
-        transform: (d: any) => ({ id: d.id, name: d.name }),
+      const opts: ExecutorOptions<typeof data> = {
+        transform: (d) => ({ id: d.id, name: d.name }),
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.json).toHaveBeenCalledWith({ id: 1, name: "Test" });
     });
@@ -157,11 +153,11 @@ describe("executeSafely", () => {
     it("should apply transform to return primitive", async () => {
       const data = { id: 42, name: "Test" };
       const fn = jest.fn().mockResolvedValueOnce(data);
-      const opts: ExecutorOptions = {
-        transform: (d: any) => d.id,
+      const opts: ExecutorOptions<typeof data> = {
+        transform: (d) => d.id,
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.json).toHaveBeenCalledWith(42);
     });
@@ -170,7 +166,7 @@ describe("executeSafely", () => {
       const data = { id: 1, name: "Test" };
       const fn = jest.fn().mockResolvedValueOnce(data);
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(mockRes.json).toHaveBeenCalledWith(data);
     });
@@ -178,12 +174,12 @@ describe("executeSafely", () => {
     it("should apply transform with custom status", async () => {
       const data = { id: 99, name: "Created" };
       const fn = jest.fn().mockResolvedValueOnce(data);
-      const opts: ExecutorOptions = {
+      const opts: ExecutorOptions<typeof data> = {
         successStatus: 201,
-        transform: (d: any) => ({ id: d.id }),
+        transform: (d) => ({ id: d.id }),
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(201);
       expect(mockRes.json).toHaveBeenCalledWith({ id: 99 });
@@ -195,7 +191,7 @@ describe("executeSafely", () => {
       const error = new Error("Service failed");
       const fn = jest.fn().mockRejectedValueOnce(error);
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(error);
       expect(mockRes.json).not.toHaveBeenCalled();
@@ -205,7 +201,7 @@ describe("executeSafely", () => {
       const error = { code: 500, message: "Internal error" };
       const fn = jest.fn().mockRejectedValueOnce(error);
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(mockNext).toHaveBeenCalledWith(error);
     });
@@ -218,7 +214,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Empty" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(0);
@@ -230,7 +226,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Empty" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith(false);
@@ -242,7 +238,7 @@ describe("executeSafely", () => {
         onEmpty: { status: 404, message: "Empty" },
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.status).toHaveBeenCalledWith(200);
       expect(mockRes.json).toHaveBeenCalledWith("");
@@ -251,7 +247,7 @@ describe("executeSafely", () => {
     it("should call fn with no arguments", async () => {
       const fn = jest.fn().mockResolvedValueOnce({ id: 1 });
 
-      await executeSafely(fn, mockRes as Response, mockNext);
+      await executeSafely(fn, mockRes, mockNext);
 
       expect(fn).toHaveBeenCalledWith();
       expect(fn).toHaveBeenCalledTimes(1);
@@ -260,13 +256,13 @@ describe("executeSafely", () => {
     it("should handle all options together", async () => {
       const data = { id: 5, name: "Combined", secret: "x" };
       const fn = jest.fn().mockResolvedValueOnce(data);
-      const opts: ExecutorOptions = {
+      const opts: ExecutorOptions<typeof data> = {
         successStatus: 201,
         contentType: "application/json",
-        transform: (d: any) => ({ id: d.id, name: d.name }),
+        transform: (d) => ({ id: d.id, name: d.name }),
       };
 
-      await executeSafely(fn, mockRes as Response, mockNext, opts);
+      await executeSafely(fn, mockRes, mockNext, opts);
 
       expect(mockRes.type).toHaveBeenCalledWith("application/json");
       expect(mockRes.status).toHaveBeenCalledWith(201);

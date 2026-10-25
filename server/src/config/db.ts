@@ -76,7 +76,7 @@ if (!isTestEnv) {
 
 export async function queryListAsync<T extends RowDataPacket>(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T[]> {
   const [rows] = await pool.execute<T[]>(sql, params);
   return rows ?? [];
@@ -84,7 +84,7 @@ export async function queryListAsync<T extends RowDataPacket>(
 
 export async function queryFirstAsync<T extends RowDataPacket>(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<T | null> {
   let query = `${sql} LIMIT 1`;
   const [rows] = await pool.execute<T[]>(query, params);
@@ -93,21 +93,21 @@ export async function queryFirstAsync<T extends RowDataPacket>(
 
 export async function insertAsync(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<number> {
   const [result] = await pool.execute<ResultSetHeader>(sql, params);
-  return (result.insertId ?? 0) as number;
+  return result.insertId ?? 0;
 }
 
 export async function executeNonQueryAsync(
   sql: string,
-  params: any[] = []
+  params: unknown[] = []
 ): Promise<number> {
   const [result] = await pool.execute<ResultSetHeader>(sql, params);
   return result.affectedRows;
 }
 
-export async function countAsync(sql: string, params?: any[]): Promise<number> {
+export async function countAsync(sql: string, params?: unknown[]): Promise<number> {
   const [rows] = await pool.execute<CountResult[]>(sql, params);
   return rows[0].count;
 }
